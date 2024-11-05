@@ -1,3 +1,3 @@
-module github.com/es-debug/backend-academy-2024-go-template
+module backend_academy_2024_project_3-go-Dabzelos
 
 go 1.22.6
