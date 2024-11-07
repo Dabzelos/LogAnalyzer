@@ -2,7 +2,6 @@ package domain
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"regexp"
 	"strconv"
@@ -54,6 +53,16 @@ func (s *StatHolder) DataProcessor(r io.Reader) {
 func (s *StatHolder) Parser(singleLog string) {
 	logsFormat := regexp.MustCompile("^(\\S+) - (\\S*) \\[(.*?)] \"(\\S+) (\\S+) (\\S+)\" (\\d{3}) (\\d+) \"(.*?)\" \"(.*?)\"$")
 	matches := logsFormat.FindStringSubmatch(singleLog)
+	logTime, err := time.Parse("02/Jan/2006:15:04:05 -0700", matches[3])
+	if err != nil {
+		s.unparsedLogs++
+
+		return
+	}
+
+	if (!s.from.IsZero() && logTime.Before(s.from)) || (!s.to.IsZero() && logTime.After(s.to)) {
+		return
+	}
 
 	if matches != nil {
 		s.totalCounter++
@@ -62,6 +71,7 @@ func (s *StatHolder) Parser(singleLog string) {
 		bytesInSingleLog, _ := strconv.Atoi(matches[8])
 		s.bytesSend = append(s.bytesSend, bytesInSingleLog)
 		s.commonAnswers[matches[7]]++
+
 		return
 	}
 	s.unparsedLogs++
