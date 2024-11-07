@@ -2,21 +2,25 @@ package domain
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 type StatHolder struct {
 	totalCounter          int
+	averageResponseVolume int
+	unmatchedLogs         int
+	unparsedLogs          int
+	percentile            float32
+	bytesSend             []int
 	httpRequests          map[string]int
 	requestedResources    map[string]int
 	commonAnswers         map[string]int
-	averageResponseVolume int
-	percentile            float32
-	unmatchedLogs         int
-	bytesSend             []int
-	unparsedLogs          int
+	from                  time.Time
+	to                    time.Time
 }
 
 func NewStatHolder() *StatHolder {
