@@ -26,18 +26,20 @@ type StatHolder struct {
 func NewStatHolder(from, to string) *StatHolder {
 	timeFrom, err := time.Parse("02/Jan/2006:15:04:05 -0700", from)
 	if err != nil {
-		fmt.Println("pizdec 1")
+
 	}
 
 	timeTo, err := time.Parse("02/Jan/2006:15:04:05 -0700", to)
 	if err != nil {
-		fmt.Println("pizdec 2")
+
 	}
 
 	return &StatHolder{
-		httpRequests:       make(map[string]int, 9), // в http 1.1 определенно 9 стандартных методов
-		requestedResources: make(map[string]int),
+		httpRequests:       make(map[string]int, 9),  // в http 1.1 определенно 9 стандартных методов, р
+		requestedResources: make(map[string]int),     // решил указать тк на лекциях сказали что в рантайме может сказаться на производительности
 		commonAnswers:      make(map[string]int, 63), // вроде как существует 63 стандартных кода ответа
+		to:                 timeTo,
+		from:               timeFrom,
 	}
 }
 
