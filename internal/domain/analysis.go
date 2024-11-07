@@ -23,7 +23,17 @@ type StatHolder struct {
 	to                    time.Time
 }
 
-func NewStatHolder() *StatHolder {
+func NewStatHolder(from, to string) *StatHolder {
+	timeFrom, err := time.Parse("02/Jan/2006:15:04:05 -0700", from)
+	if err != nil {
+		fmt.Println("pizdec 1")
+	}
+
+	timeTo, err := time.Parse("02/Jan/2006:15:04:05 -0700", to)
+	if err != nil {
+		fmt.Println("pizdec 2")
+	}
+
 	return &StatHolder{
 		httpRequests:       make(map[string]int, 9), // в http 1.1 определенно 9 стандартных методов
 		requestedResources: make(map[string]int),
