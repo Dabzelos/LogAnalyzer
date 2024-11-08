@@ -8,10 +8,13 @@ import (
 )
 
 type Statistic struct {
-	LogsMetrics Metrics
-	CommonStats CommonStats
-	TimeRange   TimeRange
-	Percentile  float32
+	LogsMetrics          Metrics
+	CommonStats          CommonStats
+	TimeRange            TimeRange
+	NinetyFivePercentile float32
+	Median               float32
+	ResponseCodes        ResponseCodeDistribution
+	ErrorRate            float32
 }
 
 type Metrics struct {
@@ -39,6 +42,14 @@ type TimeRange struct {
 	To   time.Time
 }
 
+type ResponseCodeDistribution struct {
+	Informational int // 1xx
+	Success       int // 2xx
+	Redirection   int // 3xx
+	ClientError   int // 4xx
+	ServerError   int // 5xx
+}
+
 // DataAnalyzer - метод структуры Statistic, нужен для конфертации сырых данных полученных после парсинга логов,
 // в статистику которая уже будет использоваться для составления отчета.
 func (s *Statistic) DataAnalyzer(data *DataHolder) *Statistic {
@@ -62,8 +73,35 @@ func (s *Statistic) DataAnalyzer(data *DataHolder) *Statistic {
 	slices.Sort(data.bytesSend)
 
 	// Позиция для перцентиля
-	index := int(math.Ceil(0.95*float64(len(data.bytesSend)))) - 1
-	percentile := float32(data.bytesSend[index])
+	indexForNfPercentile := int(math.Ceil(0.95 * float64(len(data.bytesSend))))
+	NFPercentile := float32(data.bytesSend[indexForNfPercentile])
+
+	// позиция для медианы
+	indexForMedian := int(math.Ceil(0.5 * float64(len(data.bytesSend))))
+	median := float32(data.bytesSend[indexForMedian])
+
+	// Подсчет распределения кодов ответов и ошибок
+	var responseCodes ResponseCodeDistribution
+	var totalErrors int
+	for code, count := range data.commonAnswers {
+		switch {
+		case code >= "100" && code < "200":
+			responseCodes.Informational += count
+		case code >= "200" && code < "300":
+			responseCodes.Success += count
+		case code >= "300" && code < "400":
+			responseCodes.Redirection += count
+		case code >= "400" && code < "500":
+			responseCodes.ClientError += count
+			totalErrors += count
+		case code >= "500":
+			responseCodes.ServerError += count
+			totalErrors += count
+		}
+	}
+
+	// Процент ошибок по отношению к общему количеству запросов
+	errorRate := float32(totalErrors) / float32(data.TotalCounter) * 100
 
 	return &Statistic{
 		LogsMetrics: Metrics{
@@ -81,7 +119,10 @@ func (s *Statistic) DataAnalyzer(data *DataHolder) *Statistic {
 			To:   data.to,
 		},
 
-		Percentile: percentile,
+		NinetyFivePercentile: NFPercentile,
+		Median:               median,
+		ErrorRate:            errorRate,
+		ResponseCodes:        responseCodes,
 	}
 }
 
