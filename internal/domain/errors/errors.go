@@ -45,3 +45,23 @@ func (e ErrTimeParsing) Error() string {
 type ErrWrongTimeBoundaries struct{}
 
 func (e ErrWrongTimeBoundaries) Error() string { return "to before from" }
+
+type ErrFileCreation struct{}
+
+func (e ErrFileCreation) Error() string { return "file creation error" }
+
+type ErrFileWrite struct{}
+
+func (e ErrFileWrite) Error() string { return "file write error" }
+
+type ErrInvalidURL struct{}
+
+func (e ErrInvalidURL) Error() string { return "invalid URL" }
+
+type ErrGetContentFromURL struct{}
+
+func (e ErrGetContentFromURL) Error() string { return "Get content from URL error" }
+
+type ErrNotOkHTTPAnswer struct{}
+
+func (e ErrNotOkHTTPAnswer) Error() string { return "Not Ok HTTP Answer" }
