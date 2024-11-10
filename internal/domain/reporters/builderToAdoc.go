@@ -1,6 +1,7 @@
 package reporters
 
 import (
+	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
 	"fmt"
 	"os"
 
@@ -9,22 +10,23 @@ import (
 
 type ReportADoc struct{}
 
-func (r *ReportADoc) ReportBuilder(s *domain.Statistic) {
+func (r *ReportADoc) ReportBuilder(s *domain.Statistic) (err error) {
 	file, err := os.Create("./LogAnalyzerReport.adoc")
 	if err != nil {
+		return errors.ErrFileCreation{}
 	}
 	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-		}
+		err = file.Close()
 	}(file)
 
 	reportMessage := r.buildReportMessageAdoc(s)
 	_, err = file.WriteString(reportMessage)
 
 	if err != nil {
-		fmt.Println(err)
+		return errors.ErrFileWrite{}
 	}
+
+	return err
 }
 
 func (r *ReportADoc) buildReportMessageAdoc(stat *domain.Statistic) string {
