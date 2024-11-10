@@ -59,7 +59,10 @@ func (a *Application) SetUp() error {
 	return nil
 }
 
-// timeValidation
+// timeValidation - позволяет проверить флаги from и to которые передаюся в качестве аргументов в эту функцию
+// функция вернет время или ошибку в случае если на жтапе парсинга времени возникли какие то ошибки
+// если флаги не заданы - пустые строки, тогда вернет нулевое значение для времени - следовательно временной промежуток
+// не ограничен.
 func (a *Application) timeValidation(from, to string) (time.Time, time.Time, error) {
 	var (
 		fromTime time.Time
@@ -127,10 +130,12 @@ func (a *Application) sourceValidation(source string) error {
 	return errors.ErrNoSource{} // ни файл/ни паттерн пути/ни ссылка
 }
 
+// isURL - простая функция позволяющая мне определить является ли ресурс ссылкой - по префиксу http/https.
 func (a *Application) isURL(path string) bool {
 	return len(path) > 4 && (path[:4] == "http" || path[:5] == "https")
 }
 
+// DataProcessor - функция отвечающая за вызов и обработки источников логов.
 func (a *Application) DataProcessor(r io.Reader) {
 	scanner := bufio.NewScanner(r)
 
