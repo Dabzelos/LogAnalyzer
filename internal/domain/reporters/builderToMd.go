@@ -1,6 +1,7 @@
 package reporters
 
 import (
+	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
 	"fmt"
 	"os"
 
@@ -9,30 +10,29 @@ import (
 
 type ReportMd struct{}
 
-func (r *ReportMd) ReportBuilder(s *domain.Statistic) {
+func (r *ReportMd) ReportBuilder(s *domain.Statistic) (err error) {
 	file, err := os.Create("./LogAnalyzerReport.md")
 	if err != nil {
-		fmt.Println(err)
+		return errors.ErrFileCreation{}
 	}
 	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			fmt.Println(err)
-		}
+		err = file.Close()
 	}(file)
 
 	reportMessage := r.buildReportMessage(s)
 
 	_, err = file.WriteString(reportMessage)
 	if err != nil {
-		fmt.Println(err)
+		return errors.ErrFileWrite{}
 	}
+
+	return err
 }
 
 func (r *ReportMd) buildReportMessage(stat *domain.Statistic) string {
 	markdown := "#### Общая информация\n\n"
 	markdown += "|        Метрика        |     Значение |\n|:---------------------:|-------------:|\n"
-	markdown += fmt.Sprintf("|       Файл(-ы)        | `%s` |\n", "")
+	markdown += fmt.Sprintf("|       Файл(-ы)        |  %s  |\n", "")
 	markdown += fmt.Sprintf("|    Начальная дата     |  %s  |\n", stat.TimeRange.From.Format("02.01.2006"))
 	markdown += fmt.Sprintf("|     Конечная дата     |  %s  |\n", stat.TimeRange.To.Format("02.01.2006"))
 	markdown += fmt.Sprintf("|  Количество запросов  |  %d  |\n", stat.LogsMetrics.ProcessedLogs)
