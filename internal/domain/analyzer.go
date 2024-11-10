@@ -53,20 +53,14 @@ type ResponseCodeDistribution struct {
 // DataAnalyzer - метод структуры Statistic, нужен для конфертации сырых данных полученных после парсинга логов,
 // в статистику которая уже будет использоваться для составления отчета.
 func (s *Statistic) DataAnalyzer(data *DataHolder) *Statistic {
-	// Средний размер ответа
-	var totalBytes int
+	var totalBytes, totalErrors int
 	for _, bytes := range data.bytesSend {
 		totalBytes += bytes
 	}
+
 	averageAnswerSize := float32(totalBytes) / float32(len(data.bytesSend))
-
-	// Определение наиболее частого HTTP запроса
 	commonHTTPRequests := s.findTopThree(data.httpRequests)
-
-	// Определение наиболее часто запрашиваемого ресурса
 	commonResources := s.findTopThree(data.requestedResources)
-
-	// Определение наиболее частого кода ответа
 	commonHTTPCodes := s.findTopThree(data.commonAnswers)
 
 	// Сортируем данные
@@ -82,7 +76,7 @@ func (s *Statistic) DataAnalyzer(data *DataHolder) *Statistic {
 
 	// Подсчет распределения кодов ответов и ошибок
 	var responseCodes ResponseCodeDistribution
-	var totalErrors int
+
 	for code, count := range data.commonAnswers {
 		switch {
 		case code >= "100" && code < "200":
@@ -133,6 +127,7 @@ func (s *Statistic) findTopThree(data map[string]int) []KeyValue {
 	for value, count := range data {
 		items = append(items, KeyValue{Value: value, Count: count})
 	}
+
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].Count > items[j].Count
 	})

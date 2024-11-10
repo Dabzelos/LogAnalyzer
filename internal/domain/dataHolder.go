@@ -67,5 +67,6 @@ func (s *DataHolder) Parser(singleLog string) {
 
 		return
 	}
+
 	s.unparsedLogs++
 }
