@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -25,34 +26,39 @@ type Application struct {
 	Reporter   Reporter
 	RawData    *domain.DataHolder
 	Statistics *domain.Statistic
+	timeFrom   time.Time
+	timeTo     time.Time
+	logger     *slog.Logger
 }
 
-func Start() {
-	app := Application{}
-	err := app.SetUp()
+func NewApp(logger *slog.Logger) *Application {
+	return &Application{logger: logger}
+}
+
+func (a *Application) Start() {
+	err := a.SetUp()
 
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	for _, LogSource := range app.Content {
-		app.DataProcessor(LogSource)
-
-		fmt.Printf("%+v", app.RawData)
+	for _, LogSource := range a.Content {
+		a.DataProcessor(LogSource)
 	}
 
-	err = app.closeLogSources()
+	err = a.closeLogSources()
 	if err != nil {
 		fmt.Println(err)
 	}
-	if app.RawData == nil {
+
+	if a.RawData == nil {
 		return
 	}
-	app.Statistics = app.Statistics.DataAnalyzer(app.RawData)
-	fmt.Printf("%+v", app.RawData)
 
-	err = app.Reporter.ReportBuilder(app.Statistics)
+	a.Statistics = a.Statistics.DataAnalyzer(a.RawData)
+
+	err = a.Reporter.ReportBuilder(a.Statistics)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -69,25 +75,25 @@ func (a *Application) SetUp() error {
 	flag.Parse()
 
 	if *source == "" {
-		fmt.Println("source is required")
 		return errors.ErrNoSource{}
 	}
 
 	err := a.sourceValidation(*source)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
 	timeFrom, timeTo, err := a.timeValidation(*from, *to)
 	if err != nil {
-		fmt.Println(err)
 		return errors.ErrTimeParsing{}
 	}
 
+	a.timeTo = timeTo
+	a.timeFrom = timeFrom
+
 	fieldToFilter, valueToFilter := a.filterValidation(*field, *value)
 
-	a.RawData = domain.NewDataHolder(timeFrom, timeTo, fieldToFilter, valueToFilter)
+	a.RawData = domain.NewDataHolder(fieldToFilter, valueToFilter)
 	a.Statistics = &domain.Statistic{}
 	a.Reporter = a.formatValidation(*format)
 
@@ -207,7 +213,7 @@ func (a *Application) DataProcessor(r io.Reader) {
 
 	for scanner.Scan() {
 		singleLog := scanner.Text()
-		a.RawData.Parser(singleLog)
+		a.RawData.Parser(singleLog, a.timeFrom, a.timeTo)
 	}
 }
 
@@ -215,10 +221,8 @@ func (a *Application) closeLogSources() error {
 	for _, source := range a.Content {
 		if closer, ok := source.(io.Closer); ok {
 			if err := closer.Close(); err != nil {
-				return fmt.Errorf("failed to close source: %w", err)
+				return errors.ErrSourceClosure{}
 			}
-		} else {
-			return fmt.Errorf("unsupported source type: %T", source)
 		}
 	}
 

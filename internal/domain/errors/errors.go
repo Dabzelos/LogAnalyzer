@@ -71,3 +71,9 @@ type ErrNoDataWereProcessed struct{}
 func (e ErrNoDataWereProcessed) Error() string {
 	return "no data were processed"
 }
+
+type ErrSourceClosure struct{}
+
+func (e ErrSourceClosure) Error() string {
+	return "source closure error"
+}

@@ -16,7 +16,7 @@ import (
 // Мапа commonAnswers содржит ключами коды http ответов, а значениями сколько подобных ответов было.
 // from и to - временные границы, будут стандартным значением если не усановленны (January 1, year 1, 00:00:00 UTC.)
 type DataHolder struct {
-	TotalCounter       int
+	totalCounter       int
 	unparsedLogs       int
 	bytesSend          []int
 	httpRequests       map[string]int
@@ -31,13 +31,11 @@ type DataHolder struct {
 // NewDataHolder - принимает параметрами timeFrom и timeTo, и инициализирует map`ы которые потом пригодятся для анализа.
 // На go.dev написано, что "нулевое значение", для time.Time это January 1, year 1, 00:00:00 UTC.
 // Это удобно тк в мы сможем воспользоваться в методе Parser при проверке заданы ли вообще временные рамки для логов.
-func NewDataHolder(timeFrom, timeTo time.Time, fieldToFilter, valueToFilter string) *DataHolder {
+func NewDataHolder(fieldToFilter, valueToFilter string) *DataHolder {
 	return &DataHolder{
 		httpRequests:       make(map[string]int, 9),  // в http 1.1 определенно 9 стандартных методов, р
 		requestedResources: make(map[string]int),     // решил указать тк на лекциях сказали что в рантайме может сказаться на производительности
 		commonAnswers:      make(map[string]int, 63), // вроде как существует 63 стандартных кода ответа
-		to:                 timeTo,
-		from:               timeFrom,
 		filter:             fieldToFilter,
 		value:              valueToFilter,
 	}
@@ -45,7 +43,7 @@ func NewDataHolder(timeFrom, timeTo time.Time, fieldToFilter, valueToFilter stri
 
 // Parser метод структуры DataHolder, принимает строку singleLog в качестве аргумента, и пытается с помощью регулярного
 // выражения, разбить на подстроки уже пригодные для анализа.
-func (s *DataHolder) Parser(singleLog string) {
+func (s *DataHolder) Parser(singleLog string, timeFrom, timeTo time.Time) {
 	logsFormat := regexp.MustCompile("^(\\S+) - (\\S*) \\[(.*?)] \"(\\S+) (\\S+) (\\S+)\" (\\d{3}) (\\d+) \"(.*?)\" \"(.*?)\"$")
 	matches := logsFormat.FindStringSubmatch(singleLog)
 
@@ -55,9 +53,19 @@ func (s *DataHolder) Parser(singleLog string) {
 
 		return
 	}
+
 	// Проверка попадает ли лог в выбранный временной промежуток если он задан
-	if (!s.from.IsZero() && logTime.Before(s.from)) || (!s.to.IsZero() && logTime.After(s.to)) {
+	if (!timeFrom.IsZero() && logTime.Before(timeFrom)) || (!timeTo.IsZero() && logTime.After(timeTo)) {
 		return
+	}
+
+	// Устанавливаем время начала и конца на основании первого и последнего подходящего лога
+	if s.from.IsZero() || logTime.Before(s.from) {
+		s.from = logTime
+	}
+
+	if s.to.IsZero() || logTime.After(s.to) {
+		s.to = logTime
 	}
 
 	filterIndex := map[string]int{
@@ -82,7 +90,7 @@ func (s *DataHolder) Parser(singleLog string) {
 	// после того как я проверил что лог во временном промежутке, собираем то что смогли спарсить, если смогли
 	// в противном случае увеличиваем число неспаршенных логов
 	if matches != nil {
-		s.TotalCounter++
+		s.totalCounter++
 		s.httpRequests[matches[4]]++
 		s.requestedResources[matches[5]]++
 		bytesInSingleLog, _ := strconv.Atoi(matches[8])

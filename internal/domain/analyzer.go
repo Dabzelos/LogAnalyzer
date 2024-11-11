@@ -13,8 +13,8 @@ type Statistic struct {
 	TimeRange            TimeRange
 	NinetyFivePercentile float32
 	Median               float32
-	ResponseCodes        ResponseCodeDistribution
 	ErrorRate            float32
+	ResponseCodes        ResponseCodeDistribution
 }
 
 type Metrics struct {
@@ -95,11 +95,11 @@ func (s *Statistic) DataAnalyzer(data *DataHolder) *Statistic {
 	}
 
 	// Процент ошибок по отношению к общему количеству запросов
-	errorRate := float32(totalErrors) / float32(data.TotalCounter) * 100
+	errorRate := float32(totalErrors) / float32(data.totalCounter) * 100
 
 	return &Statistic{
 		LogsMetrics: Metrics{
-			ProcessedLogs:     data.TotalCounter,
+			ProcessedLogs:     data.totalCounter,
 			UnparsedLogs:      data.unparsedLogs,
 			AverageAnswerSize: averageAnswerSize,
 		},
