@@ -54,29 +54,29 @@ type ResponseCodeDistribution struct {
 // в статистику которая уже будет использоваться для составления отчета.
 func (s *Statistic) DataAnalyzer(data *DataHolder) *Statistic {
 	var totalBytes, totalErrors int
-	for _, bytes := range data.bytesSend {
+	for _, bytes := range data.BytesSend {
 		totalBytes += bytes
 	}
 
-	averageAnswerSize := float32(totalBytes) / float32(len(data.bytesSend))
+	averageAnswerSize := float32(totalBytes) / float32(len(data.BytesSend))
 	commonHTTPRequests := s.findTopThree(data.httpRequests)
-	commonResources := s.findTopThree(data.requestedResources)
-	commonHTTPCodes := s.findTopThree(data.commonAnswers)
+	commonResources := s.findTopThree(data.RequestedResources)
+	commonHTTPCodes := s.findTopThree(data.CommonAnswers)
 
 	// Сортируем данные
-	slices.Sort(data.bytesSend)
+	slices.Sort(data.BytesSend)
 
 	// Позиция для перцентиля
-	indexForNfPercentile := int(math.Ceil(0.95 * float64(len(data.bytesSend))))
-	NFPercentile := float32(data.bytesSend[indexForNfPercentile])
+	indexForNfPercentile := int(math.Ceil(0.95 * float64(len(data.BytesSend))))
+	NFPercentile := float32(data.BytesSend[indexForNfPercentile])
 	// позиция для медианы
-	indexForMedian := int(math.Ceil(0.5 * float64(len(data.bytesSend))))
-	median := float32(data.bytesSend[indexForMedian])
+	indexForMedian := int(math.Ceil(0.5 * float64(len(data.BytesSend))))
+	median := float32(data.BytesSend[indexForMedian])
 
 	// Подсчет распределения кодов ответов и ошибок
 	var responseCodes ResponseCodeDistribution
 
-	for code, count := range data.commonAnswers {
+	for code, count := range data.CommonAnswers {
 		switch {
 		case code >= "100" && code < "200":
 			responseCodes.Informational += count
@@ -94,12 +94,12 @@ func (s *Statistic) DataAnalyzer(data *DataHolder) *Statistic {
 	}
 
 	// Процент ошибок по отношению к общему количеству запросов
-	errorRate := float32(totalErrors) / float32(data.totalCounter) * 100
+	errorRate := float32(totalErrors) / float32(data.TotalCounter) * 100
 
 	return &Statistic{
 		LogsMetrics: Metrics{
-			ProcessedLogs:     data.totalCounter,
-			UnparsedLogs:      data.unparsedLogs,
+			ProcessedLogs:     data.TotalCounter,
+			UnparsedLogs:      data.UnparsedLogs,
 			AverageAnswerSize: averageAnswerSize,
 		},
 		CommonStats: CommonStats{

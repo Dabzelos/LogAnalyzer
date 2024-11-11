@@ -37,9 +37,7 @@ func NewApp(logger *slog.Logger) *Application {
 }
 
 func (a *Application) Start() {
-	err := a.setUp()
-
-	if err != nil {
+	if err := a.setUp(); err != nil {
 		return
 	}
 
@@ -47,8 +45,7 @@ func (a *Application) Start() {
 		a.DataProcessor(LogSource)
 	}
 
-	err = a.closeLogSources()
-	if err != nil {
+	if err := a.closeLogSources(); err != nil {
 		a.OutputHandler.Write("Error closing log sources occurred")
 	}
 
@@ -59,7 +56,7 @@ func (a *Application) Start() {
 
 	a.Statistics = a.Statistics.DataAnalyzer(a.RawData)
 
-	err = a.Reporter.ReportBuilder(a.Statistics, "LogAnalyzerReport")
+	err := a.Reporter.ReportBuilder(a.Statistics, "LogAnalyzerReport")
 	if err != nil {
 		a.OutputHandler.Write("Error reporting builder occurred")
 		return
@@ -85,8 +82,7 @@ func (a *Application) setUp() error {
 		return errors.ErrNoSource{}
 	}
 
-	err := a.sourceValidation(*source)
-	if err != nil {
+	if err := a.sourceValidation(*source); err != nil {
 		a.OutputHandler.Write("Source validation error")
 		a.logger.Error("Source validation error", err.Error(), err)
 
@@ -174,7 +170,6 @@ func (a *Application) timeValidation(from, to string) (fromTime, toTime time.Tim
 
 	// Проверка порядка времени
 	if !fromTime.IsZero() && !toTime.IsZero() && toTime.Before(fromTime) {
-
 		return time.Time{}, time.Time{}, errors.ErrWrongTimeBoundaries{}
 	}
 

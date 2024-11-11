@@ -12,10 +12,12 @@ type ReportMd struct{}
 
 func (r *ReportMd) ReportBuilder(s *domain.Statistic, filepath string) (err error) {
 	filepath += ".md"
+
 	file, err := os.Create(filepath)
 	if err != nil {
 		return errors.ErrFileCreation{}
 	}
+
 	defer func(file *os.File) {
 		err = file.Close()
 	}(file)

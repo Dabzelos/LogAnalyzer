@@ -12,10 +12,12 @@ type ReportADoc struct{}
 
 func (r *ReportADoc) ReportBuilder(s *domain.Statistic, filepath string) (err error) {
 	filepath += ".adoc"
+
 	file, err := os.Create(filepath)
 	if err != nil {
 		return errors.ErrFileCreation{}
 	}
+
 	defer func(file *os.File) {
 		err = file.Close()
 	}(file)
