@@ -24,18 +24,22 @@ type DataHolder struct {
 	commonAnswers      map[string]int
 	from               time.Time
 	to                 time.Time
+	filter             string
+	value              string
 }
 
 // NewDataHolder - принимает параметрами timeFrom и timeTo, и инициализирует map`ы которые потом пригодятся для анализа.
 // На go.dev написано, что "нулевое значение", для time.Time это January 1, year 1, 00:00:00 UTC.
 // Это удобно тк в мы сможем воспользоваться в методе Parser при проверке заданы ли вообще временные рамки для логов.
-func NewDataHolder(timeFrom, timeTo time.Time) *DataHolder {
+func NewDataHolder(timeFrom, timeTo time.Time, fieldToFilter, valueToFilter string) *DataHolder {
 	return &DataHolder{
 		httpRequests:       make(map[string]int, 9),  // в http 1.1 определенно 9 стандартных методов, р
 		requestedResources: make(map[string]int),     // решил указать тк на лекциях сказали что в рантайме может сказаться на производительности
 		commonAnswers:      make(map[string]int, 63), // вроде как существует 63 стандартных кода ответа
 		to:                 timeTo,
 		from:               timeFrom,
+		filter:             fieldToFilter,
+		value:              valueToFilter,
 	}
 }
 
