@@ -10,7 +10,6 @@ import (
 )
 
 func TestDataHolder_Parser(t *testing.T) {
-	t.Parallel()
 
 	testCases := []struct {
 		testScenario string
@@ -88,7 +87,8 @@ func TestDataHolder_Parser(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.testScenario, func(t *testing.T) {
+		t.Run(tc.testScenario, func(tt *testing.T) {
+			tt.Parallel()
 			data := domain.NewDataHolder("", "")
 
 			for _, log := range tc.logs {
