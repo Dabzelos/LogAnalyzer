@@ -46,7 +46,9 @@ func Start() {
 	if err != nil {
 		fmt.Println(err)
 	}
-
+	if app.RawData == nil {
+		return
+	}
 	app.Statistics = app.Statistics.DataAnalyzer(app.RawData)
 	fmt.Printf("%+v", app.RawData)
 
@@ -92,18 +94,19 @@ func (a *Application) SetUp() error {
 	return nil
 }
 
-func (a *Application) filterValidation(field, value string) (string, string) {
+func (a *Application) filterValidation(field, value string) (fieldToFilter, valueToFilter string) {
 	if field == "" || value == "" {
 		return "", ""
 	}
 
-	// Мапа допустимых полей
 	validFields := map[string]bool{
 		"remote_addr":     true,
 		"remote_user":     true,
-		"request":         true,
-		"status":          true,
-		"body_bytes_sent": true,
+		"http_req":        true,
+		"resource":        true,
+		"http_version":    true,
+		"http_code":       true,
+		"bytes_send":      true,
 		"http_referer":    true,
 		"http_user_agent": true,
 	}
@@ -115,7 +118,6 @@ func (a *Application) filterValidation(field, value string) (string, string) {
 	return "", ""
 }
 
-// '$remote_addr - $remote_user [$time_local] ' '"$request" $status $body_bytes_sent ' '"$http_referer" "$http_user_agent"'
 func (a *Application) formatValidation(format string) Reporter {
 	switch format {
 	case "adoc":
