@@ -65,3 +65,9 @@ func (e ErrGetContentFromURL) Error() string { return "Get content from URL erro
 type ErrNotOkHTTPAnswer struct{}
 
 func (e ErrNotOkHTTPAnswer) Error() string { return "Not Ok HTTP Answer" }
+
+type ErrNoDataWereProcessed struct{}
+
+func (e ErrNoDataWereProcessed) Error() string {
+	return "no data were processed"
+}
