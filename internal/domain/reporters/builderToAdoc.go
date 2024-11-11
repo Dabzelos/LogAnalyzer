@@ -39,9 +39,8 @@ func (r *ReportADoc) buildReportMessageAdoc(stat *domain.Statistic) string {
 	adoc += "== Общая информация\n\n"
 	adoc += header
 	adoc += "| Метрика | Значение\n"
-	adoc += "| Файл(-ы) | " + "" + "\n" // Замените значение, если нужно
-	adoc += fmt.Sprintf("| Начальная дата | %s\n", stat.TimeRange.From.Format("02.01.2006"))
-	adoc += fmt.Sprintf("| Конечная дата | %s\n", stat.TimeRange.To.Format("02.01.2006"))
+	adoc += fmt.Sprintf("| Начальная дата | %s\n", stat.TimeRange.From.Format("02.01.2006 15:04:05"))
+	adoc += fmt.Sprintf("| Конечная дата | %s\n", stat.TimeRange.To.Format("02.01.2006 15:04:05"))
 	adoc += fmt.Sprintf("| Количество запросов | %d\n", stat.LogsMetrics.ProcessedLogs)
 	adoc += fmt.Sprintf("| Средний размер ответа | %.2f\n", stat.LogsMetrics.AverageAnswerSize)
 	adoc += fmt.Sprintf("|Нераспаршенных логов | %d", stat.LogsMetrics.UnparsedLogs)

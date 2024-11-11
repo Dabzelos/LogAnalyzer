@@ -32,9 +32,8 @@ func (r *ReportMd) ReportBuilder(s *domain.Statistic) (err error) {
 func (r *ReportMd) buildReportMessage(stat *domain.Statistic) string {
 	markdown := "#### Общая информация\n\n"
 	markdown += "|        Метрика        |     Значение |\n|:---------------------:|-------------:|\n"
-	markdown += fmt.Sprintf("|       Файл(-ы)        |  %s  |\n", "")
-	markdown += fmt.Sprintf("|    Начальная дата     |  %s  |\n", stat.TimeRange.From.Format("02.01.2006"))
-	markdown += fmt.Sprintf("|     Конечная дата     |  %s  |\n", stat.TimeRange.To.Format("02.01.2006"))
+	markdown += fmt.Sprintf("|    Начальная дата     |  %s  |\n", stat.TimeRange.From.Format("02.01.2006 15:04:05"))
+	markdown += fmt.Sprintf("|     Конечная дата     |  %s  |\n", stat.TimeRange.To.Format("02.01.2006 15:04:05"))
 	markdown += fmt.Sprintf("|  Количество запросов  |  %d  |\n", stat.LogsMetrics.ProcessedLogs)
 	markdown += fmt.Sprintf("| Средний размер ответа | %.2f |\n", stat.LogsMetrics.AverageAnswerSize)
 	markdown += fmt.Sprintf("| Нераспаршенных логов  |  %d  | \n", stat.LogsMetrics.UnparsedLogs)
