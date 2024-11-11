@@ -18,7 +18,7 @@ import (
 )
 
 type Reporter interface {
-	ReportBuilder(s *domain.Statistic) (err error)
+	ReportBuilder(s *domain.Statistic, filepath string) (err error)
 }
 
 type Application struct {
@@ -59,7 +59,7 @@ func (a *Application) Start() {
 
 	a.Statistics = a.Statistics.DataAnalyzer(a.RawData)
 
-	err = a.Reporter.ReportBuilder(a.Statistics)
+	err = a.Reporter.ReportBuilder(a.Statistics, "LogAnalyzerReport")
 	if err != nil {
 		a.OutputHandler.Write("Error reporting builder occurred")
 		return

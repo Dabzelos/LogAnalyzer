@@ -69,7 +69,6 @@ func (s *Statistic) DataAnalyzer(data *DataHolder) *Statistic {
 	// Позиция для перцентиля
 	indexForNfPercentile := int(math.Ceil(0.95 * float64(len(data.bytesSend))))
 	NFPercentile := float32(data.bytesSend[indexForNfPercentile])
-
 	// позиция для медианы
 	indexForMedian := int(math.Ceil(0.5 * float64(len(data.bytesSend))))
 	median := float32(data.bytesSend[indexForMedian])

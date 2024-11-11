@@ -78,8 +78,7 @@ func (e ErrSourceClosure) Error() string {
 	return "source closure error"
 }
 
-type ErrOutPut struct {
-}
+type ErrOutPut struct{}
 
 func (e ErrOutPut) Error() string {
 	return "output error"

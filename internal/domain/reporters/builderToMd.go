@@ -10,8 +10,9 @@ import (
 
 type ReportMd struct{}
 
-func (r *ReportMd) ReportBuilder(s *domain.Statistic) (err error) {
-	file, err := os.Create("./LogAnalyzerReport.md")
+func (r *ReportMd) ReportBuilder(s *domain.Statistic, filepath string) (err error) {
+	filepath += ".md"
+	file, err := os.Create(filepath)
 	if err != nil {
 		return errors.ErrFileCreation{}
 	}
