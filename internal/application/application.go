@@ -37,7 +37,7 @@ func NewApp(logger *slog.Logger) *Application {
 }
 
 func (a *Application) Start() {
-	err := a.SetUp()
+	err := a.setUp()
 
 	if err != nil {
 		return
@@ -66,7 +66,8 @@ func (a *Application) Start() {
 	}
 }
 
-func (a *Application) SetUp() error {
+// setUp - позволяет провести настройку параметров приложения.
+func (a *Application) setUp() error {
 	source := flag.String("source", "", "path or URL")
 	from := flag.String("from", "", "lower time bound in ISO 8601")
 	to := flag.String("to", "", "upper time bound")
@@ -111,6 +112,7 @@ func (a *Application) SetUp() error {
 	return nil
 }
 
+// filterValidation - позволяет обработать флаги для фильтрации логов по значению поля.
 func (a *Application) filterValidation(field, value string) (fieldToFilter, valueToFilter string) {
 	if field == "" || value == "" {
 		return "", ""
@@ -135,6 +137,9 @@ func (a *Application) filterValidation(field, value string) (fieldToFilter, valu
 	return "", ""
 }
 
+// formatValidation Помогает обработать введенный флаг формата, в случае если флаг имеет значение adoc - функция вернет составитель
+// отчета в формате adoc, во всех остальных случаях - по умолчанию будет выбрать Markdown, в какой бы значение
+// флаг не был поставлен.
 func (a *Application) formatValidation(format string) Reporter {
 	switch format {
 	case "adoc":
