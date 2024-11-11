@@ -1,10 +1,8 @@
 package application
 
 import (
-	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
 	"bufio"
 	"flag"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -14,7 +12,9 @@ import (
 	"time"
 
 	"backend_academy_2024_project_3-go-Dabzelos/internal/domain"
+	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
 	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/reporters"
+	"backend_academy_2024_project_3-go-Dabzelos/internal/infrastructure"
 )
 
 type Reporter interface {
@@ -22,13 +22,14 @@ type Reporter interface {
 }
 
 type Application struct {
-	Content    []io.Reader
-	Reporter   Reporter
-	RawData    *domain.DataHolder
-	Statistics *domain.Statistic
-	timeFrom   time.Time
-	timeTo     time.Time
-	logger     *slog.Logger
+	Content       []io.Reader
+	Reporter      Reporter
+	RawData       *domain.DataHolder
+	Statistics    *domain.Statistic
+	timeFrom      time.Time
+	timeTo        time.Time
+	logger        *slog.Logger
+	OutputHandler *infrastructure.Output
 }
 
 func NewApp(logger *slog.Logger) *Application {
@@ -39,7 +40,6 @@ func (a *Application) Start() {
 	err := a.SetUp()
 
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
 
@@ -49,10 +49,11 @@ func (a *Application) Start() {
 
 	err = a.closeLogSources()
 	if err != nil {
-		fmt.Println(err)
+		a.OutputHandler.Write("Error closing log sources occurred")
 	}
 
 	if a.RawData == nil {
+		a.OutputHandler.Write("No data were parsed from sources")
 		return
 	}
 
@@ -60,7 +61,7 @@ func (a *Application) Start() {
 
 	err = a.Reporter.ReportBuilder(a.Statistics)
 	if err != nil {
-		fmt.Println(err)
+		a.OutputHandler.Write("Error reporting builder occurred")
 		return
 	}
 }
@@ -74,18 +75,28 @@ func (a *Application) SetUp() error {
 	value := flag.String("value", "", "value for filter")
 	flag.Parse()
 
+	a.OutputHandler = infrastructure.NewWriter(os.Stdout, a.logger)
+
 	if *source == "" {
+		a.OutputHandler.Write("Source is required")
+		a.logger.Error("Source is required", errors.ErrNoSource{}.Error(), errors.ErrNoSource{})
+
 		return errors.ErrNoSource{}
 	}
 
 	err := a.sourceValidation(*source)
 	if err != nil {
+		a.OutputHandler.Write("Source validation error")
+		a.logger.Error("Source validation error", err.Error(), err)
+
 		return err
 	}
 
 	timeFrom, timeTo, err := a.timeValidation(*from, *to)
 	if err != nil {
-		return errors.ErrTimeParsing{}
+		a.logger.Error("Time validation error", err.Error(), err)
+
+		return err
 	}
 
 	a.timeTo = timeTo
@@ -158,6 +169,7 @@ func (a *Application) timeValidation(from, to string) (fromTime, toTime time.Tim
 
 	// Проверка порядка времени
 	if !fromTime.IsZero() && !toTime.IsZero() && toTime.Before(fromTime) {
+
 		return time.Time{}, time.Time{}, errors.ErrWrongTimeBoundaries{}
 	}
 
