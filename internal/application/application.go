@@ -1,22 +1,23 @@
 package application
 
 import (
+	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
 	"bufio"
 	"flag"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"time"
 
 	"backend_academy_2024_project_3-go-Dabzelos/internal/domain"
 	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/reporters"
-	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/reporters/errors"
 )
 
 type Reporter interface {
-	ReportBuilder(s *domain.Statistic)
+	ReportBuilder(s *domain.Statistic) (err error)
 }
 
 type Application struct {
@@ -26,16 +27,43 @@ type Application struct {
 	Statistics *domain.Statistic
 }
 
-func (a *Application) Start() {
+func Start() {
+	app := Application{}
+	err := app.SetUp()
 
-	// тут логика прочтения относительно взятия файла // http запроса пока это остается доделать
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for _, LogSource := range app.Content {
+		app.DataProcessor(LogSource)
+
+		fmt.Printf("%+v", app.RawData)
+	}
+
+	err = app.closeLogSources()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	app.Statistics = app.Statistics.DataAnalyzer(app.RawData)
+	fmt.Printf("%+v", app.RawData)
+
+	err = app.Reporter.ReportBuilder(app.Statistics)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }
 
 func (a *Application) SetUp() error {
 	source := flag.String("source", "", "path or URL")
 	from := flag.String("from", "", "lower time bound in ISO 8601")
 	to := flag.String("to", "", "upper time bound")
-	//format := flag.String("format", "markdown", "markdown or adoc")
+	format := flag.String("format", "markdown", "markdown or adoc")
+	field := flag.String("field", "", "field name for filter")
+	value := flag.String("value", "", "value for filter")
 	flag.Parse()
 
 	if *source == "" {
@@ -45,31 +73,63 @@ func (a *Application) SetUp() error {
 
 	err := a.sourceValidation(*source)
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 
 	timeFrom, timeTo, err := a.timeValidation(*from, *to)
 	if err != nil {
+		fmt.Println(err)
 		return errors.ErrTimeParsing{}
 	}
 
-	a.RawData = domain.NewDataHolder(timeFrom, timeTo)
+	fieldToFilter, valueToFilter := a.filterValidation(*field, *value)
+
+	a.RawData = domain.NewDataHolder(timeFrom, timeTo, fieldToFilter, valueToFilter)
 	a.Statistics = &domain.Statistic{}
-	a.Reporter = &reporters.ReportADoc{}
+	a.Reporter = a.formatValidation(*format)
+
 	return nil
+}
+
+func (a *Application) filterValidation(field, value string) (string, string) {
+	if field == "" || value == "" {
+		return "", ""
+	}
+
+	// Мапа допустимых полей
+	validFields := map[string]bool{
+		"remote_addr":     true,
+		"remote_user":     true,
+		"request":         true,
+		"status":          true,
+		"body_bytes_sent": true,
+		"http_referer":    true,
+		"http_user_agent": true,
+	}
+
+	if validFields[field] {
+		return field, value
+	}
+
+	return "", ""
+}
+
+// '$remote_addr - $remote_user [$time_local] ' '"$request" $status $body_bytes_sent ' '"$http_referer" "$http_user_agent"'
+func (a *Application) formatValidation(format string) Reporter {
+	switch format {
+	case "adoc":
+		return &reporters.ReportADoc{}
+	default:
+		return &reporters.ReportMd{}
+	}
 }
 
 // timeValidation - позволяет проверить флаги from и to которые передаюся в качестве аргументов в эту функцию
 // функция вернет время или ошибку в случае если на жтапе парсинга времени возникли какие то ошибки
 // если флаги не заданы - пустые строки, тогда вернет нулевое значение для времени - следовательно временной промежуток
 // не ограничен.
-func (a *Application) timeValidation(from, to string) (time.Time, time.Time, error) {
-	var (
-		fromTime time.Time
-		toTime   time.Time
-		err      error
-	)
-
+func (a *Application) timeValidation(from, to string) (fromTime, toTime time.Time, err error) {
 	if from == "" && to == "" {
 		return fromTime, toTime, nil
 	}
@@ -96,38 +156,42 @@ func (a *Application) timeValidation(from, to string) (time.Time, time.Time, err
 	return fromTime, toTime, nil
 }
 
-// SourceValidation - пытается распознать является ли переданная строка URL, если да то делает http запрос и добавляет
-// его к списку источников логов приложения, если нет то выполняется поиск путей по формату, если не нашлось возвращает
-// ошибку, если нашлось то добавляет в список ресурсов приложения.
 func (a *Application) sourceValidation(source string) error {
 	if a.isURL(source) {
-		fmt.Println("url")
-		content, err := http.Get(source)
+		logURL, err := url.ParseRequestURI(source)
 		if err != nil {
-			content.Body.Close()
-			return errors.ErrOpenURL{}
+			return errors.ErrInvalidURL{}
 		}
-		if content.StatusCode == 200 {
-			a.Content = append(a.Content, content.Body)
-			return nil
-		}
-		content.Body.Close()
-		return errors.ErrOpenURL{}
-	} else {
-		matches, err := filepath.Glob(source)
+
+		content, err := http.Get(logURL.String())
 		if err != nil {
-			return errors.ErrNoSource{}
+			return errors.ErrGetContentFromURL{}
 		}
-		for _, match := range matches {
-			file, err := os.Open(match)
-			if err != nil {
-				return errors.ErrOpenFile{}
-			}
-			a.Content = append(a.Content, file)
+
+		if content.StatusCode != http.StatusOK {
+			return errors.ErrNotOkHTTPAnswer{}
 		}
+
+		a.Content = append(a.Content, content.Body)
+
+		return nil
 	}
 
-	return errors.ErrNoSource{} // ни файл/ни паттерн пути/ни ссылка
+	matches, err := filepath.Glob(source)
+	if err != nil || len(matches) == 0 {
+		return errors.ErrNoSource{}
+	}
+
+	for _, match := range matches {
+		file, err := os.Open(match)
+		if err != nil {
+			return errors.ErrOpenFile{}
+		}
+
+		a.Content = append(a.Content, file)
+	}
+
+	return nil // если хотя бы один файл был найден, функция вернет nil
 }
 
 // isURL - простая функция позволяющая мне определить является ли ресурс ссылкой - по префиксу http/https.
@@ -143,4 +207,18 @@ func (a *Application) DataProcessor(r io.Reader) {
 		singleLog := scanner.Text()
 		a.RawData.Parser(singleLog)
 	}
+}
+
+func (a *Application) closeLogSources() error {
+	for _, source := range a.Content {
+		if closer, ok := source.(io.Closer); ok {
+			if err := closer.Close(); err != nil {
+				return fmt.Errorf("failed to close source: %w", err)
+			}
+		} else {
+			return fmt.Errorf("unsupported source type: %T", source)
+		}
+	}
+
+	return nil
 }
