@@ -63,7 +63,6 @@ func (s *Statistic) DataAnalyzer(data *DataHolder) *Statistic {
 	commonResources := s.findTopThree(data.RequestedResources)
 	commonHTTPCodes := s.findTopThree(data.CommonAnswers)
 
-	// Сортируем данные
 	slices.Sort(data.BytesSend)
 
 	// Позиция для перцентиля
