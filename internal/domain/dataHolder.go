@@ -59,6 +59,26 @@ func (s *DataHolder) Parser(singleLog string) {
 	if (!s.from.IsZero() && logTime.Before(s.from)) || (!s.to.IsZero() && logTime.After(s.to)) {
 		return
 	}
+
+	filterIndex := map[string]int{
+		"remote_addr":     1,
+		"remote_user":     2,
+		"http_req":        4,
+		"resource":        5,
+		"http_version":    6,
+		"http_code":       7,
+		"bytes_send":      8,
+		"http_referer":    9,
+		"http_user_agent": 10,
+	}
+
+	if s.filter != "" {
+		if idx, exists := filterIndex[s.filter]; exists {
+			if idx < len(matches) && matches[idx] != s.value {
+				return
+			}
+		}
+	}
 	// после того как я проверил что лог во временном промежутке, собираем то что смогли спарсить, если смогли
 	// в противном случае увеличиваем число неспаршенных логов
 	if matches != nil {
