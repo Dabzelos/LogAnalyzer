@@ -27,12 +27,12 @@ type Metrics struct {
 // самый популярный запрос/ресурс/http код - частота
 
 type CommonStats struct {
-	HTTPRequest []KeyValue
-	Resource    []KeyValue
-	HTTPCode    []KeyValue
+	HTTPRequest []KeyCount
+	Resource    []KeyCount
+	HTTPCode    []KeyCount
 }
 
-type KeyValue struct {
+type KeyCount struct {
 	Value string
 	Count int
 }
@@ -66,10 +66,10 @@ func (s *Statistic) DataAnalyzer(data *DataHolder) *Statistic {
 	slices.Sort(data.BytesSend)
 
 	// Позиция для перцентиля
-	indexForNfPercentile := int(math.Ceil(0.95 * float64(len(data.BytesSend))))
+	indexForNfPercentile := int(math.Floor(0.95 * float64(len(data.BytesSend)-1)))
 	NFPercentile := float32(data.BytesSend[indexForNfPercentile])
 	// позиция для медианы
-	indexForMedian := int(math.Ceil(0.5 * float64(len(data.BytesSend))))
+	indexForMedian := int(math.Floor(0.5 * float64(len(data.BytesSend)-1)))
 	median := float32(data.BytesSend[indexForMedian])
 
 	// Подсчет распределения кодов ответов и ошибок
@@ -120,10 +120,10 @@ func (s *Statistic) DataAnalyzer(data *DataHolder) *Statistic {
 
 // findTopThree - функция, которая помогает найти топ три самых используемых значения в мапе,
 // Вынесено в отдельную функцию для удобства использования.
-func (s *Statistic) findTopThree(data map[string]int) []KeyValue {
-	items := make([]KeyValue, 0, len(data))
+func (s *Statistic) findTopThree(data map[string]int) []KeyCount {
+	items := make([]KeyCount, 0, len(data))
 	for value, count := range data {
-		items = append(items, KeyValue{Value: value, Count: count})
+		items = append(items, KeyCount{Value: value, Count: count})
 	}
 
 	sort.Slice(items, func(i, j int) bool {

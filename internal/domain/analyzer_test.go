@@ -46,11 +46,11 @@ func TestDataAnalyzer(t *testing.T) {
 
 	// Проверка 95-го перцентиля
 	sortedBytesSend := []int{100, 150, 200, 250, 300}
-	expectedNFPercentile := float32(sortedBytesSend[int(math.Ceil(0.95*float64(len(sortedBytesSend)))-1)])
+	expectedNFPercentile := float32(sortedBytesSend[int(math.Floor(0.95*float64(len(sortedBytesSend)-1)))])
 	assert.Equal(t, expectedNFPercentile, result.NinetyFivePercentile)
 
 	// Проверка медианы
-	expectedMedian := float32(sortedBytesSend[int(math.Ceil(0.5*float64(len(sortedBytesSend)))-1)])
+	expectedMedian := float32(sortedBytesSend[int(math.Floor(0.5*float64(len(sortedBytesSend)-1)))])
 	assert.Equal(t, expectedMedian, result.Median)
 
 	// Проверка распределения HTTP кодов
@@ -63,10 +63,11 @@ func TestDataAnalyzer(t *testing.T) {
 	assert.Equal(t, expectedErrorRate, result.ErrorRate)
 
 	// Проверка диапазона времени
-	assert.Equal(t, "2024-01-01", result.TimeRange.From)
-	assert.Equal(t, "2024-01-31", result.TimeRange.To)
+	assert.Equal(t, data.From, result.TimeRange.From)
+	assert.Equal(t, data.To, result.TimeRange.To)
 
-	/*	assert.Equal(t, expectedCommonHTTPRequest, result.CommonStats.HTTPRequest)
-		assert.Equal(t, expectedCommonResources, result.CommonStats.Resource)
-		assert.Equal(t, expectedCommonHTTPCodes, result.CommonStats.HTTPCode)*/
+	assert.Equal(t, []domain.KeyCount{{Value: "POST", Count: 15}, {Value: "GET", Count: 10}, {Value: "PUT", Count: 5}}, result.CommonStats.HTTPRequest) // предполагается, что POST запросов 15
+	assert.Equal(t, []domain.KeyCount{{Value: "/about", Count: 20}, {Value: "/home", Count: 10}}, result.CommonStats.Resource)                          // предполагается, что это топ 2 ресурса
+	assert.Equal(t, []domain.KeyCount{{Value: "200", Count: 25}, {Value: "404", Count: 5}, {Value: "500", Count: 2}}, result.CommonStats.HTTPCode)      // предполагается, что это топ 2 кода
+
 }
