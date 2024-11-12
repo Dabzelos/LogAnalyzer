@@ -3,7 +3,6 @@ package application
 import (
 	"bufio"
 	"flag"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -18,11 +17,11 @@ import (
 )
 
 type Reporter interface {
-	ReportBuilder(s *domain.Statistic, filepath string) (err error)
+	Build(s *domain.Statistic, filepath string) (err error)
 }
 
 type Application struct {
-	Content       []io.Reader
+	Files         []string
 	Reporter      Reporter
 	RawData       *domain.DataHolder
 	Statistics    *domain.Statistic
@@ -52,7 +51,7 @@ func (a *Application) Start() {
 
 	a.Statistics = a.Statistics.AnalyzeData(a.RawData)
 
-	err := a.Reporter.Builder(a.Statistics, "LogAnalyzerReport")
+	err := a.Reporter.Build(a.Statistics, "LogAnalyzerReport")
 	if err != nil {
 		a.OutputHandler.Write("Error reporting builder occurred")
 		return
@@ -188,8 +187,6 @@ func (a *Application) sourceValidation(source string) error {
 			return errors.ErrNotOkHTTPAnswer{}
 		}
 
-		a.Content = append(a.Content, content.Body)
-
 		return nil
 	}
 
@@ -199,12 +196,10 @@ func (a *Application) sourceValidation(source string) error {
 	}
 
 	for _, match := range matches {
-		file, err := os.Open(match)
+		_, err := os.Open(match)
 		if err != nil {
 			return errors.ErrOpenFile{}
 		}
-
-		a.Content = append(a.Content, file)
 	}
 
 	return nil // если хотя бы один файл был найден, функция вернет nil
@@ -212,27 +207,21 @@ func (a *Application) sourceValidation(source string) error {
 
 // isURL - простая функция позволяющая мне определить является ли ресурс ссылкой - по префиксу http/https.
 func (a *Application) isURL(path string) bool {
-	return len(path) > 4 && (path[:4] == "http" || path[:5] == "https")
+	_, err := url.Parse(path)
+	return err == nil
 }
 
 // DataProcessor - функция отвечающая за вызов и обработки источников логов.
-func (a *Application) DataProcessor(r io.Reader) {
-	scanner := bufio.NewScanner(r)
+func (a *Application) ProcessData(fileName string) {
+	file, err := os.Open(fileName)
+	if err != nil {
+		return
+	}
+
+	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
 		singleLog := scanner.Text()
-		a.RawData.Parser(singleLog, a.timeFrom, a.timeTo)
+		a.RawData.Parse(singleLog, a.timeFrom, a.timeTo)
 	}
-}
-
-func (a *Application) closeLogSources() error {
-	for _, source := range a.Content {
-		if closer, ok := source.(io.Closer); ok {
-			if err := closer.Close(); err != nil {
-				return errors.ErrSourceClosure{}
-			}
-		}
-	}
-
-	return nil
 }

@@ -10,7 +10,7 @@ import (
 
 type ReportMd struct{}
 
-func (r *ReportMd) ReportBuilder(s *domain.Statistic, filepath string) (err error) {
+func (r *ReportMd) Build(s *domain.Statistic, filepath string) (err error) {
 	filepath += ".md"
 
 	file, err := os.Create(filepath)
@@ -22,7 +22,7 @@ func (r *ReportMd) ReportBuilder(s *domain.Statistic, filepath string) (err erro
 		err = file.Close()
 	}(file)
 
-	reportMessage := r.buildReportMessage(s)
+	reportMessage := r.buildMessage(s)
 
 	_, err = file.WriteString(reportMessage)
 	if err != nil {
@@ -32,7 +32,7 @@ func (r *ReportMd) ReportBuilder(s *domain.Statistic, filepath string) (err erro
 	return err
 }
 
-func (r *ReportMd) buildReportMessage(stat *domain.Statistic) string {
+func (r *ReportMd) buildMessage(stat *domain.Statistic) string {
 	markdown := "#### Общая информация\n\n"
 	markdown += "|        Метрика        |     Значение |\n|:---------------------:|-------------:|\n"
 	markdown += fmt.Sprintf("|    Начальная дата     |  %s  |\n", stat.TimeRange.From.Format("02.01.2006 15:04:05"))
