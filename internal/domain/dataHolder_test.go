@@ -94,7 +94,7 @@ func TestDataHolder_Parser(t *testing.T) {
 			for _, log := range tc.logs {
 				to, _ := time.Parse("02/Jan/2006:15:04:05 -0700", tc.to)
 				from, _ := time.Parse("02/Jan/2006:15:04:05 -0700", tc.from)
-				data.Parser(log, from, to)
+				data.Parse(log, from, to)
 			}
 
 			assert.Equal(t, data.TotalCounter, tc.parsedData.TotalCounter)

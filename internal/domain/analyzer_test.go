@@ -10,8 +10,7 @@ import (
 	"backend_academy_2024_project_3-go-Dabzelos/internal/domain"
 )
 
-func TestDataAnalyzer(t *testing.T) {
-	// Задаем тестовые данные
+func TestAnalyzeData(t *testing.T) {
 	data := &domain.DataHolder{
 		BytesSend: []int{100, 200, 150, 300, 250},
 		HTTPRequests: map[string]int{
@@ -36,7 +35,7 @@ func TestDataAnalyzer(t *testing.T) {
 
 	statistic := &domain.Statistic{}
 
-	result := statistic.DataAnalyzer(data)
+	result := statistic.AnalyzeData(data)
 
 	// Проверка обработанных логов
 	assert.Equal(t, 50, result.LogsMetrics.ProcessedLogs)
