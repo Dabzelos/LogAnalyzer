@@ -1,18 +1,20 @@
 package domain_test
 
 import (
-	"backend_academy_2024_project_3-go-Dabzelos/internal/domain"
-	"github.com/stretchr/testify/assert"
 	"math"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"backend_academy_2024_project_3-go-Dabzelos/internal/domain"
 )
 
 func TestDataAnalyzer(t *testing.T) {
 	// Задаем тестовые данные
 	data := &domain.DataHolder{
 		BytesSend: []int{100, 200, 150, 300, 250},
-		HttpRequests: map[string]int{
+		HTTPRequests: map[string]int{
 			"GET":  10,
 			"POST": 15,
 			"PUT":  5,
@@ -66,8 +68,9 @@ func TestDataAnalyzer(t *testing.T) {
 	assert.Equal(t, data.From, result.TimeRange.From)
 	assert.Equal(t, data.To, result.TimeRange.To)
 
-	assert.Equal(t, []domain.KeyCount{{Value: "POST", Count: 15}, {Value: "GET", Count: 10}, {Value: "PUT", Count: 5}}, result.CommonStats.HTTPRequest) // предполагается, что POST запросов 15
-	assert.Equal(t, []domain.KeyCount{{Value: "/about", Count: 20}, {Value: "/home", Count: 10}}, result.CommonStats.Resource)                          // предполагается, что это топ 2 ресурса
-	assert.Equal(t, []domain.KeyCount{{Value: "200", Count: 25}, {Value: "404", Count: 5}, {Value: "500", Count: 2}}, result.CommonStats.HTTPCode)      // предполагается, что это топ 2 кода
-
+	assert.Equal(t, []domain.KeyCount{{Value: "POST", Count: 15}, {Value: "GET", Count: 10}, {Value: "PUT", Count: 5}},
+		result.CommonStats.HTTPRequest)
+	assert.Equal(t, []domain.KeyCount{{Value: "/about", Count: 20}, {Value: "/home", Count: 10}}, result.CommonStats.Resource)
+	assert.Equal(t, []domain.KeyCount{{Value: "200", Count: 25}, {Value: "404", Count: 5}, {Value: "500", Count: 2}},
+		result.CommonStats.HTTPCode)
 }

@@ -59,7 +59,7 @@ func (s *Statistic) DataAnalyzer(data *DataHolder) *Statistic {
 	}
 
 	averageAnswerSize := float32(totalBytes) / float32(len(data.BytesSend))
-	commonHTTPRequests := s.findTopThree(data.HttpRequests)
+	commonHTTPRequests := s.findTopThree(data.HTTPRequests)
 	commonResources := s.findTopThree(data.RequestedResources)
 	commonHTTPCodes := s.findTopThree(data.CommonAnswers)
 
