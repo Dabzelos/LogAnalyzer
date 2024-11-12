@@ -41,12 +41,8 @@ func (a *Application) Start() {
 		return
 	}
 
-	for _, LogSource := range a.Content {
-		a.DataProcessor(LogSource)
-	}
-
-	if err := a.closeLogSources(); err != nil {
-		a.OutputHandler.Write("Error closing log sources occurred")
+	for _, LogSource := range a.Files {
+		a.ProcessData(LogSource)
 	}
 
 	if a.RawData == nil {
@@ -54,9 +50,9 @@ func (a *Application) Start() {
 		return
 	}
 
-	a.Statistics = a.Statistics.DataAnalyzer(a.RawData)
+	a.Statistics = a.Statistics.AnalyzeData(a.RawData)
 
-	err := a.Reporter.ReportBuilder(a.Statistics, "LogAnalyzerReport")
+	err := a.Reporter.Builder(a.Statistics, "LogAnalyzerReport")
 	if err != nil {
 		a.OutputHandler.Write("Error reporting builder occurred")
 		return

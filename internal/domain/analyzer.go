@@ -50,9 +50,9 @@ type ResponseCodeDistribution struct {
 	ServerError   int // 5xx
 }
 
-// DataAnalyzer - метод структуры Statistic, нужен для конфертации сырых данных полученных после парсинга логов,
+// AnalyzeData - метод структуры Statistic, нужен для конфертации сырых данных полученных после парсинга логов,
 // в статистику которая уже будет использоваться для составления отчета.
-func (s *Statistic) DataAnalyzer(data *DataHolder) *Statistic {
+func (s *Statistic) AnalyzeData(data *DataHolder) *Statistic {
 	var totalBytes, totalErrors int
 	for _, bytes := range data.BytesSend {
 		totalBytes += bytes
@@ -77,16 +77,16 @@ func (s *Statistic) DataAnalyzer(data *DataHolder) *Statistic {
 
 	for code, count := range data.CommonAnswers {
 		switch {
-		case code >= "100" && code < "200":
+		case code < "200":
 			responseCodes.Informational += count
-		case code >= "200" && code < "300":
+		case code < "300":
 			responseCodes.Success += count
-		case code >= "300" && code < "400":
+		case code < "400":
 			responseCodes.Redirection += count
-		case code >= "400" && code < "500":
+		case code < "500":
 			responseCodes.ClientError += count
 			totalErrors += count
-		case code >= "500":
+		default:
 			responseCodes.ServerError += count
 			totalErrors += count
 		}
