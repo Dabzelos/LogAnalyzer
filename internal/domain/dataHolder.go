@@ -19,11 +19,11 @@ type DataHolder struct {
 	TotalCounter       int
 	UnparsedLogs       int
 	BytesSend          []int
-	httpRequests       map[string]int
+	HttpRequests       map[string]int
 	RequestedResources map[string]int
 	CommonAnswers      map[string]int
-	from               time.Time
-	to                 time.Time
+	From               time.Time
+	To                 time.Time
 	filter             string
 	value              string
 }
@@ -33,7 +33,7 @@ type DataHolder struct {
 // Это удобно тк в мы сможем воспользоваться в методе Parser при проверке заданы ли вообще временные рамки для логов.
 func NewDataHolder(fieldToFilter, valueToFilter string) *DataHolder {
 	return &DataHolder{
-		httpRequests:       make(map[string]int, 9),  // в http 1.1 определенно 9 стандартных методов, р
+		HttpRequests:       make(map[string]int, 9),  // в http 1.1 определенно 9 стандартных методов, р
 		RequestedResources: make(map[string]int),     // решил указать тк на лекциях сказали что в рантайме может сказаться на производительности
 		CommonAnswers:      make(map[string]int, 63), // вроде как существует 63 стандартных кода ответа
 		filter:             fieldToFilter,
@@ -65,12 +65,12 @@ func (s *DataHolder) Parser(singleLog string, timeFrom, timeTo time.Time) {
 	}
 
 	// Устанавливаем время начала и конца на основании первого и последнего подходящего лога
-	if s.from.IsZero() || logTime.Before(s.from) {
-		s.from = logTime
+	if s.From.IsZero() || logTime.Before(s.From) {
+		s.From = logTime
 	}
 
-	if s.to.IsZero() || logTime.After(s.to) {
-		s.to = logTime
+	if s.To.IsZero() || logTime.After(s.To) {
+		s.To = logTime
 	}
 
 	filterIndex := map[string]int{
@@ -96,7 +96,7 @@ func (s *DataHolder) Parser(singleLog string, timeFrom, timeTo time.Time) {
 	// в противном случае увеличиваем число неспаршенных логов
 
 	s.TotalCounter++
-	s.httpRequests[matches[4]]++
+	s.HttpRequests[matches[4]]++
 	s.RequestedResources[matches[5]]++
 	bytesInSingleLog, _ := strconv.Atoi(matches[8])
 	s.BytesSend = append(s.BytesSend, bytesInSingleLog)
