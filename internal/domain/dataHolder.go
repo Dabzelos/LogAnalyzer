@@ -6,26 +6,52 @@ import (
 	"time"
 )
 
+const (
+	RemoteAddr    = "remote_addr"
+	RemoteUser    = "remote_user"
+	HTTPReq       = "http_req"
+	Resource      = "resource"
+	HTTPVersion   = "http_version"
+	HTTPCode      = "http_code"
+	BytesSend     = "bytes_send"
+	HTTPReferer   = "http_referer"
+	HTTPUserAgent = "http_user_agent"
+)
+
+// FilterIndices содержит индексы для соответствующих ключей.
+var FilterIndices = map[string]int{
+	RemoteAddr:    1,
+	RemoteUser:    2,
+	HTTPReq:       4,
+	Resource:      5,
+	HTTPVersion:   6,
+	HTTPCode:      7,
+	BytesSend:     8,
+	HTTPReferer:   9,
+	HTTPUserAgent: 10,
+}
+
 // DataHolder - сырые данные, которые я обрабатываю, хранятся в этой структуре.
 // В дальнейшем они будут обработаны другой структурой чтобы не нарушать SingleResponsibility.
-// Общее число логов - TotalCounter
-// Число логов которые мы не смогли распарсить - unparsedLogs.
-// Слайс содержащий все размеры ответов - bytesSend, нужен для подсчета среднего ответа и 95-персентиля.
-// Мапа httpRequests которая содержит все http запросы к серверу, где ключ - запрос, значение - число таких запросов.
-// Мапа requestedResources содержит ключами ресурсы сервера к которым обращались, значениями сколько раз.
-// Мапа commonAnswers содржит ключами коды http ответов, а значениями сколько подобных ответов было.
-// from и to - временные границы, будут стандартным значением если не усановленны (January 1, year 1, 00:00:00 UTC.)
 type DataHolder struct {
-	TotalCounter       int
-	UnparsedLogs       int
-	BytesSend          []int
-	HTTPRequests       map[string]int
+	// Общее число логов
+	TotalCounter int
+	// Число логов которые мы не смогли распарсить.
+	UnparsedLogs int
+	// Слайс содержащий все размеры ответов - bytesSend, нужен для подсчета среднего ответа и 95-персентиля.
+	BytesSend []int
+	// Мапа которая содержит все http запросы к серверу, где ключ - запрос, значение - число таких запросов.
+	HTTPRequests map[string]int
+	// Мапа содержит ключами ресурсы сервера к которым обращались, значениями сколько раз.
 	RequestedResources map[string]int
-	CommonAnswers      map[string]int
-	From               time.Time
-	To                 time.Time
-	filter             string
-	value              string
+	// Мапа содржит ключами коды http ответов, а значениями сколько подобных ответов было.
+	CommonAnswers map[string]int
+	// временные границы, будут стандартным значением если не усановленны (January 1, year 1, 00:00:00 UTC.)
+	From time.Time
+	To   time.Time
+	// поля для фильтрации в случае если установлены то будет проведена фильтрация поля по значению.
+	filter string
+	value  string
 }
 
 // NewDataHolder - принимает параметрами timeFrom и timeTo, и инициализирует map`ы которые потом пригодятся для анализа.
@@ -43,7 +69,7 @@ func NewDataHolder(fieldToFilter, valueToFilter string) *DataHolder {
 
 // Parser метод структуры DataHolder, принимает строку singleLog в качестве аргумента, и пытается с помощью регулярного
 // выражения, разбить на подстроки уже пригодные для анализа.
-func (s *DataHolder) Parser(singleLog string, timeFrom, timeTo time.Time) {
+func (s *DataHolder) Parse(singleLog string, timeFrom, timeTo time.Time) {
 	logsFormat := regexp.MustCompile("^(\\S+) - (\\S*) \\[(.*?)] \"(\\S+) (\\S+) (\\S+)\" (\\d{3}) (\\d+) \"(.*?)\" \"(.*?)\"$")
 	matches := logsFormat.FindStringSubmatch(singleLog)
 
@@ -73,20 +99,8 @@ func (s *DataHolder) Parser(singleLog string, timeFrom, timeTo time.Time) {
 		s.To = logTime
 	}
 
-	filterIndex := map[string]int{
-		"remote_addr":     1,
-		"remote_user":     2,
-		"http_req":        4,
-		"resource":        5,
-		"http_version":    6,
-		"http_code":       7,
-		"bytes_send":      8,
-		"http_referer":    9,
-		"http_user_agent": 10,
-	}
-
 	if s.filter != "" {
-		if idx, exists := filterIndex[s.filter]; exists {
+		if idx, exists := FilterIndices[s.filter]; exists {
 			if idx < len(matches) && matches[idx] != s.value {
 				return
 			}

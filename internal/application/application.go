@@ -1,10 +1,10 @@
 package application
 
 import (
+	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/commanders"
 	"bufio"
 	"flag"
 	"log/slog"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -16,12 +16,17 @@ import (
 	"backend_academy_2024_project_3-go-Dabzelos/internal/infrastructure"
 )
 
+type Commander interface {
+	File() ([]string, error)
+}
+
 type Reporter interface {
 	Build(s *domain.Statistic, filepath string) (err error)
 }
 
 type Application struct {
 	Files         []string
+	Commander     Commander
 	Reporter      Reporter
 	RawData       *domain.DataHolder
 	Statistics    *domain.Statistic
@@ -36,9 +41,25 @@ func NewApp(logger *slog.Logger) *Application {
 }
 
 func (a *Application) Start() {
+	a.logger.Info("Starting application")
+
 	if err := a.setUp(); err != nil {
+		a.logger.Error("Error occurred in SetUp", err.Error(), err)
+
 		return
 	}
+
+	a.logger.Info("SetUp went successfully")
+
+	files, err := a.Commander.File()
+	if err != nil {
+		a.logger.Error("Error occurred in commander", err.Error(), err)
+		a.OutputHandler.Write("Some error occurred opening source files!")
+
+		return
+	}
+
+	a.Files = files
 
 	for _, LogSource := range a.Files {
 		a.ProcessData(LogSource)
@@ -51,7 +72,7 @@ func (a *Application) Start() {
 
 	a.Statistics = a.Statistics.AnalyzeData(a.RawData)
 
-	err := a.Reporter.Build(a.Statistics, "LogAnalyzerReport")
+	err = a.Reporter.Build(a.Statistics, "LogAnalyzerReport")
 	if err != nil {
 		a.OutputHandler.Write("Error reporting builder occurred")
 		return
@@ -109,19 +130,9 @@ func (a *Application) filterValidation(field, value string) (fieldToFilter, valu
 		return "", ""
 	}
 
-	validFields := map[string]bool{
-		"remote_addr":     true,
-		"remote_user":     true,
-		"http_req":        true,
-		"resource":        true,
-		"http_version":    true,
-		"http_code":       true,
-		"bytes_send":      true,
-		"http_referer":    true,
-		"http_user_agent": true,
-	}
+	_, ok := domain.FilterIndices[field]
 
-	if validFields[field] {
+	if ok {
 		return field, value
 	}
 
@@ -171,21 +182,12 @@ func (a *Application) timeValidation(from, to string) (fromTime, toTime time.Tim
 	return fromTime, toTime, nil
 }
 
+// sourceValidation - позволяет валидировать источник логов, ожидается либо путь к локальным файлам/паттерн файлов,
+// либо URL.
 func (a *Application) sourceValidation(source string) error {
 	if a.isURL(source) {
-		logURL, err := url.ParseRequestURI(source)
-		if err != nil {
-			return errors.ErrInvalidURL{}
-		}
-
-		content, err := http.Get(logURL.String())
-		if err != nil {
-			return errors.ErrGetContentFromURL{}
-		}
-
-		if content.StatusCode != http.StatusOK {
-			return errors.ErrNotOkHTTPAnswer{}
-		}
+		a.logger.Info("URL commander")
+		a.Commander = &commanders.URLCommander{URL: source}
 
 		return nil
 	}
@@ -195,23 +197,20 @@ func (a *Application) sourceValidation(source string) error {
 		return errors.ErrNoSource{}
 	}
 
-	for _, match := range matches {
-		_, err := os.Open(match)
-		if err != nil {
-			return errors.ErrOpenFile{}
-		}
-	}
+	a.logger.Info("File commander")
+	a.Commander = &commanders.FileCommander{FilePath: source}
 
-	return nil // если хотя бы один файл был найден, функция вернет nil
+	return nil
 }
 
-// isURL - простая функция позволяющая мне определить является ли ресурс ссылкой - по префиксу http/https.
+// isURL простая вспомогательная функция позволяет определить является ли строка URL.
 func (a *Application) isURL(path string) bool {
-	_, err := url.Parse(path)
-	return err == nil
+	parsedURL, err := url.ParseRequestURI(path)
+
+	return err == nil && (parsedURL.Scheme == "http" || parsedURL.Scheme == "https")
 }
 
-// DataProcessor - функция отвечающая за вызов и обработки источников логов.
+// ProcessData - функция отвечающая за открытлие и обработку локального файла с логами по имени файла.
 func (a *Application) ProcessData(fileName string) {
 	file, err := os.Open(fileName)
 	if err != nil {
