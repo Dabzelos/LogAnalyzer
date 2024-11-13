@@ -1,11 +1,12 @@
 package reporters
 
 import (
-	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"backend_academy_2024_project_3-go-Dabzelos/internal/domain"
+	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
 )
 
 type ReportMd struct{}
@@ -31,48 +32,54 @@ func (r *ReportMd) Build(s *domain.Statistic, filepath string) (err error) {
 
 	return err
 }
-
 func (r *ReportMd) buildMessage(stat *domain.Statistic) string {
-	markdown := "#### Общая информация\n\n"
-	markdown += "|        Метрика        |     Значение |\n|:---------------------:|-------------:|\n"
-	markdown += fmt.Sprintf("|    Начальная дата     |  %s  |\n", stat.TimeRange.From.Format("02.01.2006 15:04:05"))
-	markdown += fmt.Sprintf("|     Конечная дата     |  %s  |\n", stat.TimeRange.To.Format("02.01.2006 15:04:05"))
-	markdown += fmt.Sprintf("|  Количество запросов  |  %d  |\n", stat.LogsMetrics.ProcessedLogs)
-	markdown += fmt.Sprintf("| Средний размер ответа | %.2f |\n", stat.LogsMetrics.AverageAnswerSize)
-	markdown += fmt.Sprintf("| Нераспаршенных логов  |  %d  | \n", stat.LogsMetrics.UnparsedLogs)
-	markdown += fmt.Sprintf("|   95p размера ответа  | %.2f |\n", stat.NinetyFivePercentile)
-	markdown += fmt.Sprintf("|Медиана размера ответа | %.2f |\n", stat.Median)
-	markdown += fmt.Sprintf("|  Всего кодов ошибок   |  %d  |\n", stat.ResponseCodes.ServerError+stat.ResponseCodes.ClientError)
-	markdown += fmt.Sprintf("| Процент кодов ошибок от общего числа| %.2f |\n", stat.ErrorRate)
+	var builder strings.Builder
 
-	markdown += "\n#### Топ HTTP запросов\n\n"
-	markdown += "|   Запрос   | Количество |\n|:----------:|-----------:|\n"
+	// Общая информация
+	builder.WriteString("#### Общая информация\n\n")
+	builder.WriteString("|        Метрика        |     Значение |\n|:---------------------:|-------------:|\n")
+	builder.WriteString(fmt.Sprintf("|    Начальная дата     |  %s  |\n", stat.TimeRange.From.Format("02.01.2006 15:04:05")))
+	builder.WriteString(fmt.Sprintf("|     Конечная дата     |  %s  |\n", stat.TimeRange.To.Format("02.01.2006 15:04:05")))
+	builder.WriteString(fmt.Sprintf("|  Количество запросов  |  %d  |\n", stat.LogsMetrics.ProcessedLogs))
+	builder.WriteString(fmt.Sprintf("| Средний размер ответа | %.2f |\n", stat.LogsMetrics.AverageAnswerSize))
+	builder.WriteString(fmt.Sprintf("| Нераспаршенных логов  |  %d  |\n", stat.LogsMetrics.UnparsedLogs))
+	builder.WriteString(fmt.Sprintf("|   95p размера ответа  | %.2f |\n", stat.NinetyFivePercentile))
+	builder.WriteString(fmt.Sprintf("| Медиана размера ответа | %.2f |\n", stat.Median))
+	builder.WriteString(fmt.Sprintf("|  Всего кодов ошибок   |  %d  |\n", stat.ResponseCodes.ServerError+stat.ResponseCodes.ClientError))
+	builder.WriteString(fmt.Sprintf("| Процент кодов ошибок от общего числа| %.2f |\n", stat.ErrorRate))
+
+	// Топ HTTP запросов
+	builder.WriteString("\n#### Топ HTTP запросов\n\n")
+	builder.WriteString("|   Запрос   | Количество |\n|:----------:|-----------:|\n")
 
 	for _, req := range stat.CommonStats.HTTPRequest {
-		markdown += fmt.Sprintf("| %-10s | %10d |\n", req.Value, req.Count)
+		builder.WriteString(fmt.Sprintf("| %-10s | %10d |\n", req.Value, req.Count))
 	}
 
-	markdown += "\n#### Топ запрашиваемых ресурсов\n\n"
-	markdown += "|   Ресурс   | Количество |\n|:----------:|-----------:|\n"
+	// Топ запрашиваемых ресурсов
+	builder.WriteString("\n#### Топ запрашиваемых ресурсов\n\n")
+	builder.WriteString("|   Ресурс   | Количество |\n|:----------:|-----------:|\n")
 
 	for _, res := range stat.CommonStats.Resource {
-		markdown += fmt.Sprintf("| %-10s | %10d |\n", res.Value, res.Count)
+		builder.WriteString(fmt.Sprintf("| %-10s | %10d |\n", res.Value, res.Count))
 	}
 
-	markdown += "\n#### Коды ответа\n\n"
-	markdown += "| Категория      | Количество |\n|:--------------:|-----------:|\n"
-	markdown += fmt.Sprintf("| Информационные | %d         |\n", stat.ResponseCodes.Informational)
-	markdown += fmt.Sprintf("| Успешные       | %d         |\n", stat.ResponseCodes.Success)
-	markdown += fmt.Sprintf("| Перенаправления| %d         |\n", stat.ResponseCodes.Redirection)
-	markdown += fmt.Sprintf("| Ошибки клиента | %d         |\n", stat.ResponseCodes.ClientError)
-	markdown += fmt.Sprintf("| Ошибки сервера | %d         |\n\n", stat.ResponseCodes.ServerError)
+	// Коды ответа
+	builder.WriteString("\n#### Коды ответа\n\n")
+	builder.WriteString("| Категория      | Количество |\n|:--------------:|-----------:|\n")
+	builder.WriteString(fmt.Sprintf("| Информационные | %d         |\n", stat.ResponseCodes.Informational))
+	builder.WriteString(fmt.Sprintf("| Успешные       | %d         |\n", stat.ResponseCodes.Success))
+	builder.WriteString(fmt.Sprintf("| Перенаправления| %d         |\n", stat.ResponseCodes.Redirection))
+	builder.WriteString(fmt.Sprintf("| Ошибки клиента | %d         |\n", stat.ResponseCodes.ClientError))
+	builder.WriteString(fmt.Sprintf("| Ошибки сервера | %d         |\n", stat.ResponseCodes.ServerError))
 
-	markdown += "#### Топ HTTP кодов ответа\n\n"
-	markdown += "| Код ответа | Количество |\n|:----------:|-----------:|\n"
+	// Топ HTTP кодов ответа
+	builder.WriteString("\n#### Топ HTTP кодов ответа\n\n")
+	builder.WriteString("| Код ответа | Количество |\n|:----------:|-----------:|\n")
 
 	for _, code := range stat.CommonStats.HTTPCode {
-		markdown += fmt.Sprintf("| %-10s | %10d |\n", code.Value, code.Count)
+		builder.WriteString(fmt.Sprintf("| %-10s | %10d |\n", code.Value, code.Count))
 	}
 
-	return markdown
+	return builder.String()
 }
