@@ -19,6 +19,7 @@ const (
 )
 
 // FilterIndices содержит индексы для соответствующих ключей.
+// Каждый ключ - имя определенной части NGINX лога.
 var FilterIndices = map[string]int{
 	RemoteAddr:    1,
 	RemoteUser:    2,
@@ -46,10 +47,10 @@ type DataHolder struct {
 	RequestedResources map[string]int
 	// Мапа содржит ключами коды http ответов, а значениями сколько подобных ответов было.
 	CommonAnswers map[string]int
-	// временные границы, будут стандартным значением если не усановленны (January 1, year 1, 00:00:00 UTC.)
+	// Временные границы, будут стандартным значением если не усановленны (January 1, year 1, 00:00:00 UTC.)
 	From time.Time
 	To   time.Time
-	// поля для фильтрации в случае если установлены то будет проведена фильтрация поля по значению.
+	// Поля для фильтрации в случае если установлены то будет проведена фильтрация поля по значению.
 	filter string
 	value  string
 }
@@ -67,7 +68,7 @@ func NewDataHolder(fieldToFilter, valueToFilter string) *DataHolder {
 	}
 }
 
-// Parser метод структуры DataHolder, принимает строку singleLog в качестве аргумента, и пытается с помощью регулярного
+// Parse метод структуры DataHolder, принимает строку singleLog в качестве аргумента, и пытается с помощью регулярного
 // выражения, разбить на подстроки уже пригодные для анализа.
 func (s *DataHolder) Parse(singleLog string, timeFrom, timeTo time.Time) {
 	logsFormat := regexp.MustCompile("^(\\S+) - (\\S*) \\[(.*?)] \"(\\S+) (\\S+) (\\S+)\" (\\d{3}) (\\d+) \"(.*?)\" \"(.*?)\"$")

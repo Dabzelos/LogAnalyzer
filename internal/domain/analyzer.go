@@ -24,8 +24,7 @@ type Metrics struct {
 }
 
 // CommonStats - структура, которая помогает хранить обработанную статиску в формате
-// самый популярный запрос/ресурс/http код - частота
-
+// самый популярный запрос/ресурс/http код - частота.
 type CommonStats struct {
 	HTTPRequest []KeyCount
 	Resource    []KeyCount
