@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-
-	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
 )
 
 type Output struct {
@@ -22,6 +20,6 @@ func (o *Output) Write(messages ...interface{}) {
 
 	_, err := o.w.Write([]byte(message))
 	if err != nil {
-		o.logger.Error("output error occurred", errors.ErrOutPut{}.Error(), err)
+		o.logger.Error("output error occurred", "error", err)
 	}
 }

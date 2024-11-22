@@ -4,6 +4,7 @@ import (
 	"math"
 	"slices"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -14,13 +15,23 @@ type Statistic struct {
 	NinetyFivePercentile float32
 	Median               float32
 	ErrorRate            float32
-	ResponseCodes        ResponseCodeDistribution
+	ResponseCodes        map[string]int
 }
+
+const (
+	Informational = "Informational" // 1xx
+	Success       = "Success"       // 2xx
+	Redirection   = "Redirection"   // 3xx
+	ClientError   = "ClientError"   // 4xx
+	ServerError   = "ServerError"   // 5xx
+
+)
 
 type Metrics struct {
 	ProcessedLogs     int
 	UnparsedLogs      int
 	AverageAnswerSize float32
+	TotalError        int
 }
 
 // CommonStats - структура, которая помогает хранить обработанную статиску в формате
@@ -41,17 +52,9 @@ type TimeRange struct {
 	To   time.Time
 }
 
-type ResponseCodeDistribution struct {
-	Informational int // 1xx
-	Success       int // 2xx
-	Redirection   int // 3xx
-	ClientError   int // 4xx
-	ServerError   int // 5xx
-}
-
-// AnalyzeData - метод структуры Statistic, нужен для конфертации сырых данных полученных после парсинга логов,
+// Fill - метод структуры Statistic, нужен для конфертации сырых данных полученных после парсинга логов,
 // в статистику которая уже будет использоваться для составления отчета.
-func (s *Statistic) AnalyzeData(data *DataHolder) *Statistic {
+func (s *Statistic) Fill(data *DataHolder) {
 	var totalBytes, totalErrors int
 	for _, bytes := range data.BytesSend {
 		totalBytes += bytes
@@ -72,21 +75,29 @@ func (s *Statistic) AnalyzeData(data *DataHolder) *Statistic {
 	median := float32(data.BytesSend[indexForMedian])
 
 	// Подсчет распределения кодов ответов и ошибок
-	var responseCodes ResponseCodeDistribution
+	ResponseCodeDistribution := map[string]int{
+		Informational: 0,
+		Success:       0,
+		Redirection:   0,
+		ClientError:   0,
+		ServerError:   0,
+	}
 
 	for code, count := range data.CommonAnswers {
+		answerCode, _ := strconv.Atoi(code)
+
 		switch {
-		case code < "200":
-			responseCodes.Informational += count
-		case code < "300":
-			responseCodes.Success += count
-		case code < "400":
-			responseCodes.Redirection += count
-		case code < "500":
-			responseCodes.ClientError += count
+		case answerCode < 200:
+			ResponseCodeDistribution[Informational] += count
+		case answerCode < 300:
+			ResponseCodeDistribution[Success] += count
+		case answerCode < 400:
+			ResponseCodeDistribution[Redirection] += count
+		case answerCode < 500:
+			ResponseCodeDistribution[ClientError] += count
 			totalErrors += count
 		default:
-			responseCodes.ServerError += count
+			ResponseCodeDistribution[ServerError] += count
 			totalErrors += count
 		}
 	}
@@ -94,27 +105,26 @@ func (s *Statistic) AnalyzeData(data *DataHolder) *Statistic {
 	// Процент ошибок по отношению к общему количеству запросов
 	errorRate := float32(totalErrors) / float32(data.TotalCounter) * 100
 
-	return &Statistic{
-		LogsMetrics: Metrics{
-			ProcessedLogs:     data.TotalCounter,
-			UnparsedLogs:      data.UnparsedLogs,
-			AverageAnswerSize: averageAnswerSize,
-		},
-		CommonStats: CommonStats{
-			HTTPRequest: commonHTTPRequests,
-			Resource:    commonResources,
-			HTTPCode:    commonHTTPCodes,
-		},
-		TimeRange: TimeRange{
-			From: data.From,
-			To:   data.To,
-		},
-
-		NinetyFivePercentile: NFPercentile,
-		Median:               median,
-		ErrorRate:            errorRate,
-		ResponseCodes:        responseCodes,
+	s.LogsMetrics = Metrics{
+		ProcessedLogs:     data.TotalCounter,
+		UnparsedLogs:      data.UnparsedLogs,
+		AverageAnswerSize: averageAnswerSize,
+		TotalError:        totalErrors,
 	}
+	s.CommonStats = CommonStats{
+		HTTPRequest: commonHTTPRequests,
+		Resource:    commonResources,
+		HTTPCode:    commonHTTPCodes,
+	}
+	s.TimeRange = TimeRange{
+		From: data.From,
+		To:   data.To,
+	}
+
+	s.NinetyFivePercentile = NFPercentile
+	s.Median = median
+	s.ErrorRate = errorRate
+	s.ResponseCodes = ResponseCodeDistribution
 }
 
 // findTopThree - функция, которая помогает найти топ три самых используемых значения в мапе,

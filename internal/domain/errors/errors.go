@@ -27,7 +27,7 @@ func (e ErrCloseURL) Error() string {
 type ErrNoSource struct{}
 
 func (e ErrNoSource) Error() string {
-	return "no source error"
+	return "no sourcegetters error"
 }
 
 type ErrZeroTime struct{}
@@ -75,7 +75,7 @@ func (e ErrNoDataWereProcessed) Error() string {
 type ErrSourceClosure struct{}
 
 func (e ErrSourceClosure) Error() string {
-	return "source closure error"
+	return "sourcegetters closure error"
 }
 
 type ErrOutPut struct{}

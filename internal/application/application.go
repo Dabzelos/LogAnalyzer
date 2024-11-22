@@ -1,23 +1,22 @@
 package application
 
 import (
-	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/commanders"
 	"bufio"
-	"flag"
 	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
 	"time"
 
-	"backend_academy_2024_project_3-go-Dabzelos/internal/domain"
-	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
-	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/reporters"
-	"backend_academy_2024_project_3-go-Dabzelos/internal/infrastructure"
+	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain"
+	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
+	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain/reporters"
+	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain/sourcegetters"
+	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/infrastructure"
 )
 
-type Commander interface {
-	File() ([]string, error)
+type SourceGetter interface {
+	FilePaths() ([]string, error)
 }
 
 type Reporter interface {
@@ -25,8 +24,8 @@ type Reporter interface {
 }
 
 type Application struct {
-	Files         []string
-	Commander     Commander
+	FilePaths     []string
+	Source        SourceGetter
 	Reporter      Reporter
 	RawData       *domain.DataHolder
 	Statistics    *domain.Statistic
@@ -40,29 +39,29 @@ func NewApp(logger *slog.Logger) *Application {
 	return &Application{logger: logger}
 }
 
-func (a *Application) Start() {
+func (a *Application) Start(source, from, to, format, field, value *string) {
 	a.logger.Info("Starting application")
 
-	if err := a.setUp(); err != nil {
-		a.logger.Error("Error occurred in SetUp", err.Error(), err)
+	if err := a.setUp(source, from, to, format, field, value); err != nil {
+		a.logger.Error("Error occurred in SetUp", "error", err)
 
 		return
 	}
 
 	a.logger.Info("SetUp went successfully")
 
-	files, err := a.Commander.File()
+	files, err := a.Source.FilePaths()
 	if err != nil {
-		a.logger.Error("Error occurred in commander", err.Error(), err)
+		a.logger.Error("Error occurred in source getter", "error", err)
 		a.OutputHandler.Write("Some error occurred opening source files!")
 
 		return
 	}
 
-	a.Files = files
+	a.FilePaths = files
 
-	for _, LogSource := range a.Files {
-		a.ProcessData(LogSource)
+	for _, logSource := range a.FilePaths {
+		a.ProcessData(logSource)
 	}
 
 	if a.RawData == nil {
@@ -70,7 +69,7 @@ func (a *Application) Start() {
 		return
 	}
 
-	a.Statistics = a.Statistics.AnalyzeData(a.RawData)
+	a.Statistics.Fill(a.RawData)
 
 	err = a.Reporter.Build(a.Statistics, "LogAnalyzerReport")
 	if err != nil {
@@ -80,52 +79,40 @@ func (a *Application) Start() {
 }
 
 // setUp - позволяет провести настройку параметров приложения.
-func (a *Application) setUp() error {
-	source := flag.String("source", "", "path or URL")
-	from := flag.String("from", "", "lower time bound in ISO 8601")
-	to := flag.String("to", "", "upper time bound")
-	format := flag.String("format", "markdown", "markdown or adoc")
-	field := flag.String("field", "", "field name for filter")
-	value := flag.String("value", "", "value for filter")
-	flag.Parse()
-
+func (a *Application) setUp(source, from, to, format, field, value *string) error {
 	a.OutputHandler = infrastructure.NewWriter(os.Stdout, a.logger)
 
 	if *source == "" {
 		a.OutputHandler.Write("Source is required")
-		a.logger.Error("Source is required", errors.ErrNoSource{}.Error(), errors.ErrNoSource{})
 
 		return errors.ErrNoSource{}
 	}
 
-	if err := a.sourceValidation(*source); err != nil {
+	if err := a.validateSource(*source); err != nil {
 		a.OutputHandler.Write("Source validation error")
-		a.logger.Error("Source validation error", err.Error(), err)
 
 		return err
 	}
 
-	timeFrom, timeTo, err := a.timeValidation(*from, *to)
+	timeFrom, timeTo, err := a.validateTime(*from, *to)
 	if err != nil {
-		a.logger.Error("Time validation error", err.Error(), err)
-
 		return err
 	}
 
 	a.timeTo = timeTo
 	a.timeFrom = timeFrom
 
-	fieldToFilter, valueToFilter := a.filterValidation(*field, *value)
+	fieldToFilter, valueToFilter := a.validateFilter(*field, *value)
 
 	a.RawData = domain.NewDataHolder(fieldToFilter, valueToFilter)
 	a.Statistics = &domain.Statistic{}
-	a.Reporter = a.formatValidation(*format)
+	a.Reporter = a.validateFormat(*format)
 
 	return nil
 }
 
-// filterValidation - позволяет обработать флаги для фильтрации логов по значению поля.
-func (a *Application) filterValidation(field, value string) (fieldToFilter, valueToFilter string) {
+// validateFilter - позволяет обработать флаги для фильтрации логов по значению поля.
+func (a *Application) validateFilter(field, value string) (fieldToFilter, valueToFilter string) {
 	if field == "" || value == "" {
 		return "", ""
 	}
@@ -139,10 +126,10 @@ func (a *Application) filterValidation(field, value string) (fieldToFilter, valu
 	return "", ""
 }
 
-// formatValidation Помогает обработать введенный флаг формата, в случае если флаг имеет значение adoc - функция вернет составитель
-// отчета в формате adoc, во всех остальных случаях - по умолчанию будет выбрать Markdown, в какой бы значение
+// validateFormat Помогает обработать введенный флаг формата, в случае если флаг имеет значение ADoc - функция вернет составитель
+// отчета в формате ADoc, во всех остальных случаях - по умолчанию будет выбрать Markdown, в какой бы значение
 // флаг не был поставлен.
-func (a *Application) formatValidation(format string) Reporter {
+func (a *Application) validateFormat(format string) Reporter {
 	switch format {
 	case "adoc":
 		return &reporters.ReportADoc{}
@@ -151,11 +138,11 @@ func (a *Application) formatValidation(format string) Reporter {
 	}
 }
 
-// timeValidation - позволяет проверить флаги from и to которые передаюся в качестве аргументов в эту функцию
-// функция вернет время или ошибку в случае если на жтапе парсинга времени возникли какие то ошибки
+// validateTime - позволяет проверить флаги from и to которые передаются в качестве аргументов в эту функцию
+// функция вернет время или ошибку в случае если на этапе парсинга времени возникли какие-то ошибки
 // если флаги не заданы - пустые строки, тогда вернет нулевое значение для времени - следовательно временной промежуток
 // не ограничен.
-func (a *Application) timeValidation(from, to string) (fromTime, toTime time.Time, err error) {
+func (a *Application) validateTime(from, to string) (fromTime, toTime time.Time, err error) {
 	if from == "" && to == "" {
 		return fromTime, toTime, nil
 	}
@@ -163,14 +150,14 @@ func (a *Application) timeValidation(from, to string) (fromTime, toTime time.Tim
 	if from != "" {
 		fromTime, err = time.Parse(time.RFC3339, from)
 		if err != nil {
-			return time.Time{}, time.Time{}, errors.ErrTimeParsing{}
+			return time.Time{}, time.Time{}, err
 		}
 	}
 
 	if to != "" {
 		toTime, err = time.Parse(time.RFC3339, to)
 		if err != nil {
-			return time.Time{}, time.Time{}, errors.ErrTimeParsing{}
+			return time.Time{}, time.Time{}, err
 		}
 	}
 
@@ -182,12 +169,12 @@ func (a *Application) timeValidation(from, to string) (fromTime, toTime time.Tim
 	return fromTime, toTime, nil
 }
 
-// sourceValidation - позволяет валидировать источник логов, ожидается либо путь к локальным файлам/паттерн файлов,
+// validateSource - позволяет валидировать источник логов, ожидается либо путь к локальным файлам/паттерн файлов,
 // либо URL.
-func (a *Application) sourceValidation(source string) error {
+func (a *Application) validateSource(source string) error {
 	if a.isURL(source) {
-		a.logger.Info("URL commander")
-		a.Commander = &commanders.URLCommander{URL: source}
+		a.logger.Info("URL SourceGetter")
+		a.Source = &sourcegetters.GetURL{URL: source}
 
 		return nil
 	}
@@ -197,8 +184,8 @@ func (a *Application) sourceValidation(source string) error {
 		return errors.ErrNoSource{}
 	}
 
-	a.logger.Info("File commander")
-	a.Commander = &commanders.FileCommander{FilePath: source}
+	a.logger.Info("File SourceGetter")
+	a.Source = &sourcegetters.GetFile{FilePath: source}
 
 	return nil
 }
@@ -210,7 +197,7 @@ func (a *Application) isURL(path string) bool {
 	return err == nil && (parsedURL.Scheme == "http" || parsedURL.Scheme == "https")
 }
 
-// ProcessData - функция отвечающая за открытлие и обработку локального файла с логами по имени файла.
+// ProcessData - функция отвечающая за открытие и обработку локального файла с логами по имени файла.
 func (a *Application) ProcessData(fileName string) {
 	file, err := os.Open(fileName)
 	if err != nil {

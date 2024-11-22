@@ -1,17 +1,18 @@
-package commanders
+package sourcegetters
 
 import (
-	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
 	"path/filepath"
+
+	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
 )
 
-type FileCommander struct {
+type GetFile struct {
 	FilePath string
 }
 
-// File метод позволяет обработать и вернуть слайс с именами локальных файлов.
+// FilePaths метод позволяет обработать и вернуть слайс с именами локальных файлов.
 // Обрабатываемой строкой может быть имя локального файла или паттерн для поиска файлов.
-func (c *FileCommander) File() ([]string, error) {
+func (c *GetFile) FilePaths() ([]string, error) {
 	matches, err := filepath.Glob(c.FilePath)
 	if err != nil || len(matches) == 0 {
 		return nil, errors.ErrNoSource{}

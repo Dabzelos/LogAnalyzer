@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"backend_academy_2024_project_3-go-Dabzelos/internal/domain"
+	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain"
 )
 
 func TestDataHolder_Parser(t *testing.T) {

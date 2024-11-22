@@ -107,8 +107,6 @@ func (s *DataHolder) Parse(singleLog string, timeFrom, timeTo time.Time) {
 			}
 		}
 	}
-	// после того как я проверил что лог во временном промежутке, собираем то что смогли спарсить, если смогли
-	// в противном случае увеличиваем число неспаршенных логов
 
 	s.TotalCounter++
 	s.HTTPRequests[matches[4]]++

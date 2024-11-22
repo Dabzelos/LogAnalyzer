@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"backend_academy_2024_project_3-go-Dabzelos/internal/domain"
-	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
+	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain"
+	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
 )
 
 type ReportMd struct{}
@@ -19,9 +19,7 @@ func (r *ReportMd) Build(s *domain.Statistic, filepath string) (err error) {
 		return errors.ErrFileCreation{}
 	}
 
-	defer func(file *os.File) {
-		err = file.Close()
-	}(file)
+	defer file.Close()
 
 	reportMessage := r.buildMessage(s)
 
@@ -45,7 +43,7 @@ func (r *ReportMd) buildMessage(stat *domain.Statistic) string {
 	builder.WriteString(fmt.Sprintf("| Нераспаршенных логов  |  %d  |\n", stat.LogsMetrics.UnparsedLogs))
 	builder.WriteString(fmt.Sprintf("|   95p размера ответа  | %.2f |\n", stat.NinetyFivePercentile))
 	builder.WriteString(fmt.Sprintf("| Медиана размера ответа | %.2f |\n", stat.Median))
-	builder.WriteString(fmt.Sprintf("|  Всего кодов ошибок   |  %d  |\n", stat.ResponseCodes.ServerError+stat.ResponseCodes.ClientError))
+	builder.WriteString(fmt.Sprintf("|  Всего кодов ошибок   |  %d  |\n", stat.LogsMetrics.TotalError))
 	builder.WriteString(fmt.Sprintf("| Процент кодов ошибок от общего числа| %.2f |\n", stat.ErrorRate))
 
 	// Топ HTTP запросов
@@ -67,11 +65,11 @@ func (r *ReportMd) buildMessage(stat *domain.Statistic) string {
 	// Коды ответа
 	builder.WriteString("\n#### Коды ответа\n\n")
 	builder.WriteString("| Категория      | Количество |\n|:--------------:|-----------:|\n")
-	builder.WriteString(fmt.Sprintf("| Информационные | %d         |\n", stat.ResponseCodes.Informational))
-	builder.WriteString(fmt.Sprintf("| Успешные       | %d         |\n", stat.ResponseCodes.Success))
-	builder.WriteString(fmt.Sprintf("| Перенаправления| %d         |\n", stat.ResponseCodes.Redirection))
-	builder.WriteString(fmt.Sprintf("| Ошибки клиента | %d         |\n", stat.ResponseCodes.ClientError))
-	builder.WriteString(fmt.Sprintf("| Ошибки сервера | %d         |\n", stat.ResponseCodes.ServerError))
+	builder.WriteString(fmt.Sprintf("| Информационные | %d         |\n", stat.ResponseCodes[domain.Informational]))
+	builder.WriteString(fmt.Sprintf("| Успешные       | %d         |\n", stat.ResponseCodes[domain.Success]))
+	builder.WriteString(fmt.Sprintf("| Перенаправления| %d         |\n", stat.ResponseCodes[domain.Redirection]))
+	builder.WriteString(fmt.Sprintf("| Ошибки клиента | %d         |\n", stat.ResponseCodes[domain.ClientError]))
+	builder.WriteString(fmt.Sprintf("| Ошибки сервера | %d         |\n", stat.ResponseCodes[domain.ServerError]))
 
 	// Топ HTTP кодов ответа
 	builder.WriteString("\n#### Топ HTTP кодов ответа\n\n")

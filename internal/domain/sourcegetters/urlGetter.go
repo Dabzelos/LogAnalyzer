@@ -1,4 +1,4 @@
-package commanders
+package sourcegetters
 
 import (
 	"io"
@@ -6,16 +6,16 @@ import (
 	"net/url"
 	"os"
 
-	"backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
+	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
 )
 
-type URLCommander struct {
+type GetURL struct {
 	URL string
 }
 
-// File метод котоый позволяет обработать и вернуть слайс с именами ресурсов, работает с провалидированной ссылкой,
+// FilePaths метод котоый позволяет обработать и вернуть слайс с именами ресурсов, работает с провалидированной ссылкой,
 // сохраняет тело http ответа во временный файл.
-func (c *URLCommander) File() ([]string, error) {
+func (c *GetURL) FilePaths() ([]string, error) {
 	parsedURL, _ := url.Parse(c.URL)
 
 	resp, err := http.Get(parsedURL.String())

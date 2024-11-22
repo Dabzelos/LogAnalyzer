@@ -6,11 +6,11 @@ LogAnalyzer — это программа для анализа логов се�
 Для запуска приложения требуется Go. Чтобы запустить программу, клонируйте репозиторий и выполните следующую команду:
 
 ```bash
-go run main.go -source="<path_or_url_to_logs>" [дополнительные флаги]
+go run main.go -sourcegetters="<path_or_url_to_logs>" [дополнительные флаги]
 ```
 либо
 ```bash
-./LogAnalyzer -source="<path_or_url_to_logs>"
+./LogAnalyzer -sourcegetters="<path_or_url_to_logs>"
 ```
 Доступные флаги
 1. source (обязательно) — путь к файлу логов или URL с логами.
@@ -31,7 +31,7 @@ go run main.go -source="<path_or_url_to_logs>" [дополнительные ф�
 
 Пример запуска с флагами
 ```bash
-go run main.go -source="access.log" -field="http_code" -value="404"
+go run main.go -sourcegetters="access.log" -field="http_code" -value="404"
 ```
 
 ## Метрики
