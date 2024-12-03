@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain"
-	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
-	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain/reporters"
-	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain/sourcegetters"
-	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/infrastructure"
+	"LogAnalyzer/internal/domain"
+	"LogAnalyzer/internal/domain/errors"
+	"LogAnalyzer/internal/domain/reporters"
+	"LogAnalyzer/internal/domain/sourcegetters"
+	"LogAnalyzer/internal/infrastructure"
 )
 
 type SourceGetter interface {

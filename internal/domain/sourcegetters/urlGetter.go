@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
+	"LogAnalyzer/internal/domain/errors"
 )
 
 type GetURL struct {

@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain"
-	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain/errors"
+	"LogAnalyzer/internal/domain"
+	"LogAnalyzer/internal/domain/errors"
 )
 
 type ReportMd struct{}

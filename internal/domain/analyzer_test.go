@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/domain"
+	"LogAnalyzer/internal/domain"
 )
 
 func TestAnalyzeData(t *testing.T) {

@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 
-	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/internal/application"
-	"github.com/central-university-dev/backend_academy_2024_project_3-go-Dabzelos/pkg/logger"
+	"LogAnalyzer/internal/application"
+	"LogAnalyzer/pkg/logger"
 )
 
 func main() {
